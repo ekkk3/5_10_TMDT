@@ -145,6 +145,25 @@ a {
   color: var(--muted);
 }
 
+.admin-subnav {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-subnav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff1cc;
+  font-weight: 800;
+}
+
 @media (max-width: 760px) {
   .navbar {
     align-items: flex-start;
