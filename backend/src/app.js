@@ -7,6 +7,7 @@ const healthRoutes = require('./modules/health/health.routes');
 const menuRoutes = require('./modules/menu/menu.routes');
 const foodOptionsRoutes = require('./modules/food-options/food-options.routes');
 const voucherRoutes = require('./modules/vouchers/vouchers.routes');
+const orderRoutes = require('./modules/orders/orders.routes');
 const { notFoundHandler } = require('./middlewares/not-found.middleware');
 const { errorHandler } = require('./middlewares/error-handler.middleware');
 
@@ -23,6 +24,7 @@ app.use('/api/health', healthRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/food-options', foodOptionsRoutes);
 app.use('/api/vouchers', voucherRoutes);
+app.use('/api/orders', orderRoutes);
 
 
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend', 'src')));

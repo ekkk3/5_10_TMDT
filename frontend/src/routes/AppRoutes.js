@@ -4,6 +4,8 @@ import { AuthLayout } from '../layouts/AuthLayout.js';
 import { HomePage } from '../features/home/HomePage.js';
 import { MenuPage, mountMenuPage } from '../features/menu/MenuPage.js';
 import { CartPage, mountCartPage } from '../features/cart/CartPage.js';
+import { GuestCheckoutPage, mountGuestCheckoutPage } from '../features/guest-order/GuestCheckoutPage.js';
+import { GuestOrderResultPage } from '../features/guest-order/GuestOrderResultPage.js';
 
 
 const PlaceholderPage = (title) => `
@@ -24,6 +26,11 @@ const routes = {
     render: () => CustomerLayout(CartPage()),
     afterRender: mountCartPage
   },
+  '/checkout': {
+    render: () => CustomerLayout(GuestCheckoutPage()),
+    afterRender: mountGuestCheckoutPage
+  },
+  '/guest-order/result': () => CustomerLayout(GuestOrderResultPage()),
   '/orders/search': () => CustomerLayout(PlaceholderPage('Tra cuu don')),
   '/login': () => AuthLayout(PlaceholderPage('Dang nhap')),
   '/admin': () => AdminLayout(PlaceholderPage('Quan tri'))

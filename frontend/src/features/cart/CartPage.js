@@ -186,7 +186,7 @@ export const mountCartPage = () => {
     }
 
     if (event.target.closest('[data-continue-order]')) {
-      window.alert('Chuc nang dat hang se duoc phat trien o use case tiep theo.');
+      window.location.hash = '#/checkout';
       return;
     }
 
