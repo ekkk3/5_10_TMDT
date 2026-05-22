@@ -3,6 +3,7 @@ import { AdminLayout } from '../layouts/AdminLayout.js';
 import { AuthLayout } from '../layouts/AuthLayout.js';
 import { HomePage } from '../features/home/HomePage.js';
 import { MenuPage, mountMenuPage } from '../features/menu/MenuPage.js';
+import { CartPage, mountCartPage } from '../features/cart/CartPage.js';
 
 
 const PlaceholderPage = (title) => `
@@ -19,7 +20,10 @@ const routes = {
     render: () => CustomerLayout(MenuPage()),
     afterRender: mountMenuPage
   },
-  '/cart': () => CustomerLayout(PlaceholderPage('Gio hang')),
+  '/cart': {
+    render: () => CustomerLayout(CartPage()),
+    afterRender: mountCartPage
+  },
   '/orders/search': () => CustomerLayout(PlaceholderPage('Tra cuu don')),
   '/login': () => AuthLayout(PlaceholderPage('Dang nhap')),
   '/admin': () => AdminLayout(PlaceholderPage('Quan tri'))
