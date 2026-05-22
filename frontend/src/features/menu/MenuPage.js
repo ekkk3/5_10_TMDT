@@ -1,5 +1,6 @@
 import { menuService } from '../../services/menuService.js';
 import { foodOptionsService } from '../food-options/foodOptionsService.js';
+import { CartContext } from '../../contexts/CartContext.js';
 import {
   FoodOptionSelector,
   buildCustomizedFoodPayload,
@@ -129,6 +130,16 @@ const renderModal = (food, optionGroups = []) => {
         <p>${escapeHtml(food.description || 'Mon ngon dang duoc cap nhat mo ta.')}</p>
         <div class="menu-modal__rating">${formatRating(food.average_rating)}</div>
         ${FoodOptionSelector(optionGroups)}
+        <div class="menu-modal__cart-controls">
+          <label>
+            <span>So luong</span>
+            <input type="number" min="1" step="1" value="1" data-add-quantity />
+          </label>
+          <label>
+            <span>Ghi chu</span>
+            <textarea rows="2" maxlength="180" placeholder="Vi du: it cay, khong hanh..." data-add-note></textarea>
+          </label>
+        </div>
         <button class="button button-primary menu-modal__add" type="button" data-add-customized-food ${isOutOfStock ? 'disabled' : ''}>
           ${isOutOfStock ? 'Het hang' : 'Them vao gio'}
         </button>
@@ -177,6 +188,10 @@ const pageStyles = `
     .menu-modal__content > strong { display: block; margin-bottom: 12px; color: var(--red); font-size: 22px; }
     .menu-modal__content > p { color: var(--muted); line-height: 1.6; }
     .menu-modal__rating { margin: 12px 0; font-weight: 800; }
+    .menu-modal__cart-controls { display: grid; gap: 10px; margin-top: 14px; }
+    .menu-modal__cart-controls label { display: grid; gap: 6px; color: var(--muted); font-weight: 800; }
+    .menu-modal__cart-controls input, .menu-modal__cart-controls textarea { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--ink); font: inherit; background: #fff; }
+    .menu-modal__cart-controls input { max-width: 120px; }
     .menu-modal__add { width: 100%; margin-top: 14px; }
     .food-options { display: grid; gap: 14px; margin-top: 18px; }
     .food-options__empty { margin-top: 16px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); }
@@ -375,8 +390,24 @@ export const mountMenuPage = () => {
     }
 
     const payload = buildCustomizedFoodPayload(activeModalFood, modalRoot);
-    console.log('Customized food payload:', payload);
-    addButton.textContent = 'Da ghi payload vao console';
+    const quantityInput = modalRoot.querySelector('[data-add-quantity]');
+    const noteInput = modalRoot.querySelector('[data-add-note]');
+    const quantity = Math.max(1, Number.parseInt(quantityInput?.value, 10) || 1);
+
+    CartContext.addItem({
+      ...payload,
+      image_url: activeModalFood.image_url || getFoodImage(activeModalFood.food_name),
+      quantity,
+      note: noteInput?.value || '',
+      item_total: Number(payload.total_price || 0) * quantity
+    });
+
+    addButton.textContent = 'Da them vao gio';
+    window.setTimeout(() => {
+      modalRoot.innerHTML = '';
+      activeModalFood = null;
+      window.location.hash = '#/cart';
+    }, 450);
   });
 
   modalRoot.addEventListener('change', (event) => {
@@ -395,7 +426,8 @@ export const mountMenuPage = () => {
 
     const totalPriceNode = modalRoot.querySelector('[data-food-total-price]');
     if (totalPriceNode) {
-      totalPriceNode.textContent = formatMoney(calculateOptionTotal(modalRoot, activeModalFood.price));
+      const quantity = Math.max(1, Number.parseInt(modalRoot.querySelector('[data-add-quantity]')?.value, 10) || 1);
+      totalPriceNode.textContent = formatMoney(calculateOptionTotal(modalRoot, activeModalFood.price) * quantity);
     }
   });
 
