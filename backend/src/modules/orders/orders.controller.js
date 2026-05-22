@@ -15,6 +15,21 @@ const createGuestOrder = async (req, res, next) => {
   }
 };
 
+const getGuestOrderTracking = async (req, res, next) => {
+  try {
+    const result = await ordersService.getGuestOrderTracking(req.query);
+
+    if (!result.ok) {
+      return errorResponse(res, result.message, result.statusCode, result.errors || null);
+    }
+
+    return successResponse(res, 'Tra cứu đơn hàng thành công', result.data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
 module.exports = {
-  createGuestOrder
+  createGuestOrder,
+  getGuestOrderTracking
 };
