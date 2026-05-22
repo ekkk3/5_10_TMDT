@@ -1,4 +1,12 @@
 import { menuService } from '../../services/menuService.js';
+import { foodOptionsService } from '../food-options/foodOptionsService.js';
+import {
+  FoodOptionSelector,
+  buildCustomizedFoodPayload,
+  calculateOptionTotal,
+  enforceMaxSelect,
+  validateSelectedOptions
+} from '../food-options/components/FoodOptionSelector.js';
 
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -69,7 +77,7 @@ const renderFoodCard = (food) => {
         </div>
         <div class="food-card__actions">
           <button class="button button-secondary" type="button" data-view-detail="${food.food_id}">Chi tiet</button>
-          <button class="button button-primary" type="button" ${isOutOfStock ? 'disabled' : ''}>
+          <button class="button button-primary" type="button" data-view-detail="${food.food_id}" ${isOutOfStock ? 'disabled' : ''}>
             ${isOutOfStock ? 'Het hang' : 'Them vao gio'}
           </button>
         </div>
@@ -101,7 +109,7 @@ const renderReviews = (reviews = []) => {
 };
 
 
-const renderModal = (food) => {
+const renderModal = (food, optionGroups = []) => {
   const isOutOfStock = food.status === 'OUT_OF_STOCK';
   const imageUrl = food.image_url || getFoodImage(food.food_name);
   const fallbackImage = getFoodImage(food.food_name);
@@ -117,10 +125,11 @@ const renderModal = (food) => {
       <div class="menu-modal__content">
         <span class="menu-modal__category">${escapeHtml(food.category?.category_name || 'Khac')}</span>
         <h2 id="food-detail-title">${escapeHtml(food.food_name)}</h2>
-        <strong>${formatMoney(food.price)}</strong>
+        <strong data-food-total-price>${formatMoney(food.price)}</strong>
         <p>${escapeHtml(food.description || 'Mon ngon dang duoc cap nhat mo ta.')}</p>
         <div class="menu-modal__rating">${formatRating(food.average_rating)}</div>
-        <button class="button button-primary" type="button" ${isOutOfStock ? 'disabled' : ''}>
+        ${FoodOptionSelector(optionGroups)}
+        <button class="button button-primary menu-modal__add" type="button" data-add-customized-food ${isOutOfStock ? 'disabled' : ''}>
           ${isOutOfStock ? 'Het hang' : 'Them vao gio'}
         </button>
         <div class="menu-modal__reviews">
@@ -168,6 +177,24 @@ const pageStyles = `
     .menu-modal__content > strong { display: block; margin-bottom: 12px; color: var(--red); font-size: 22px; }
     .menu-modal__content > p { color: var(--muted); line-height: 1.6; }
     .menu-modal__rating { margin: 12px 0; font-weight: 800; }
+    .menu-modal__add { width: 100%; margin-top: 14px; }
+    .food-options { display: grid; gap: 14px; margin-top: 18px; }
+    .food-options__empty { margin-top: 16px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); }
+    .food-option-group { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fffaf3; }
+    .food-option-group.has-error { border-color: var(--red); box-shadow: 0 0 0 2px rgba(201, 31, 31, 0.12); }
+    .food-option-group__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .food-option-group__header h3 { margin: 0; font-size: 16px; }
+    .food-option-group__header span { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .food-option-group__choices { display: grid; gap: 8px; }
+    .food-option-group__choices--size { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .food-option-choice { min-height: 54px; display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #f0c372; border-radius: 8px; background: #fff; cursor: pointer; }
+    .food-option-choice:has(input:checked) { border-color: var(--red); background: #fff1e6; }
+    .food-option-choice input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--red); }
+    .food-option-choice span { min-width: 0; display: grid; gap: 3px; }
+    .food-option-choice strong { font-size: 14px; line-height: 1.2; }
+    .food-option-choice small { color: var(--muted); font-weight: 700; }
+    .food-option-choice.is-disabled, .food-option-choice.is-limit-disabled { opacity: 0.48; cursor: not-allowed; }
+    .food-option-group__error { min-height: 18px; margin: 0; color: var(--red); font-size: 13px; font-weight: 700; }
     .menu-modal__reviews { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
     .menu-modal__reviews h3 { margin: 0 0 12px; }
     .review-item { padding: 12px 0; border-bottom: 1px solid #f2d4a6; }
@@ -180,6 +207,7 @@ const pageStyles = `
     @media (max-width: 640px) {
       .menu-header { display: block; }
       .menu-controls, .food-grid, .menu-modal { grid-template-columns: 1fr; }
+      .food-option-group__choices--size { grid-template-columns: 1fr; }
       .menu-modal__image { min-height: 240px; }
       .food-card__actions { grid-template-columns: 1fr; }
     }
@@ -232,6 +260,8 @@ export const mountMenuPage = () => {
       maxPrice: ''
     }
   };
+
+  let activeModalFood = null;
 
 
   const setStatus = (message) => {
@@ -309,12 +339,19 @@ export const mountMenuPage = () => {
     if (!detailButton) return;
 
 
+    activeModalFood = null;
     modalRoot.innerHTML = '<div class="menu-modal__backdrop"></div><section class="menu-modal"><div class="menu-modal__content">Dang tai chi tiet mon...</div></section>';
 
 
     try {
-      const food = await menuService.getFoodById(detailButton.dataset.viewDetail);
-      modalRoot.innerHTML = renderModal(food);
+      const foodId = detailButton.dataset.viewDetail;
+      const [food, optionGroups] = await Promise.all([
+        menuService.getFoodById(foodId),
+        foodOptionsService.getFoodOptions(foodId)
+      ]);
+
+      activeModalFood = food;
+      modalRoot.innerHTML = renderModal(food, optionGroups);
     } catch (error) {
       modalRoot.innerHTML = `<div class="menu-modal__backdrop" data-close-modal></div><section class="menu-modal"><div class="menu-modal__content">${escapeHtml(error.message || 'Khong tai duoc chi tiet mon.')}</div></section>`;
     }
@@ -324,6 +361,41 @@ export const mountMenuPage = () => {
   modalRoot.addEventListener('click', (event) => {
     if (event.target.closest('[data-close-modal]')) {
       modalRoot.innerHTML = '';
+      activeModalFood = null;
+      return;
+    }
+
+    const addButton = event.target.closest('[data-add-customized-food]');
+    if (!addButton || !activeModalFood) {
+      return;
+    }
+
+    if (!validateSelectedOptions(modalRoot)) {
+      return;
+    }
+
+    const payload = buildCustomizedFoodPayload(activeModalFood, modalRoot);
+    console.log('Customized food payload:', payload);
+    addButton.textContent = 'Da ghi payload vao console';
+  });
+
+  modalRoot.addEventListener('change', (event) => {
+    const optionInput = event.target.closest('[data-food-option]');
+    if (!optionInput || !activeModalFood) {
+      return;
+    }
+
+    const group = optionInput.closest('[data-option-group]');
+    if (group) {
+      validateSelectedOptions(modalRoot);
+      enforceMaxSelect(group, optionInput);
+    } else {
+      validateSelectedOptions(modalRoot);
+    }
+
+    const totalPriceNode = modalRoot.querySelector('[data-food-total-price]');
+    if (totalPriceNode) {
+      totalPriceNode.textContent = formatMoney(calculateOptionTotal(modalRoot, activeModalFood.price));
     }
   });
 
