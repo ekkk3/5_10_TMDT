@@ -17,6 +17,7 @@ const validateRegistrationForm = (form) => {
   const phone = normalizePhone(formData.get('phone'));
   const password = String(formData.get('password') || '');
   const confirmPassword = String(formData.get('confirm_password') || '');
+  const acceptedTerms = formData.get('accepted_terms') === 'on';
   const errors = {};
 
   if (!fullName) errors.full_name = 'Vui long nhap ho ten';
@@ -29,6 +30,7 @@ const validateRegistrationForm = (form) => {
   if (password && !/\d/.test(password)) errors.password = 'Mat khau can co chu so';
   if (password && !/[^A-Za-z0-9]/.test(password)) errors.password = 'Mat khau can co ky tu dac biet';
   if (password !== confirmPassword) errors.confirm_password = 'Mat khau nhap lai khong khop';
+  if (!acceptedTerms) errors.accepted_terms = 'Vui long dong y dieu khoan truoc khi dang ky';
 
   return {
     errors,
@@ -85,6 +87,11 @@ const renderRegisterForm = ({ fieldErrors = {}, submitError = '', isSubmitting =
         <input name="confirm_password" type="password" autocomplete="new-password" />
         ${renderFieldError(fieldErrors, 'confirm_password')}
       </label>
+      <label class="auth-check ${fieldErrors.accepted_terms ? 'has-error' : ''}">
+        <input name="accepted_terms" type="checkbox" />
+        <span>Toi dong y voi dieu khoan su dung va chinh sach bao mat cua cua hang.</span>
+      </label>
+      ${renderFieldError(fieldErrors, 'accepted_terms')}
       <button class="button button-primary auth-submit" type="submit" ${isSubmitting ? 'disabled' : ''}>
         ${isSubmitting ? 'Dang gui ma...' : 'Dang ky'}
       </button>
@@ -145,6 +152,9 @@ const pageStyles = `
     .auth-field input { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--ink); font: inherit; background: #fff; }
     .auth-field.has-error input { border-color: var(--red); box-shadow: 0 0 0 2px rgba(201, 31, 31, 0.1); }
     .auth-field__error { margin: 0; color: #b3261e; font-size: 13px; line-height: 1.35; }
+    .auth-check { display: flex; gap: 10px; align-items: flex-start; color: var(--muted); font-weight: 800; line-height: 1.45; }
+    .auth-check input { width: 18px; height: 18px; margin-top: 2px; flex: 0 0 auto; accent-color: var(--red); }
+    .auth-check.has-error span { color: #b3261e; }
     .auth-alert { padding: 12px; border-radius: 8px; font-weight: 800; line-height: 1.4; }
     .auth-alert--error { border: 1px solid #f2b8b5; color: #b3261e; background: #fff7f6; }
     .auth-alert--success { border: 1px solid #9bd6ad; color: #146c2e; background: #f4fff6; }

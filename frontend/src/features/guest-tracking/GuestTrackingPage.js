@@ -18,15 +18,15 @@ const validateTrackingForm = (values = {}) => {
   const phone = normalizePhone(values.phone);
 
   if (!orderCode) {
-    errors.orderCode = 'Vui lòng nhập mã đơn';
+    errors.orderCode = 'Vui long nhap ma don';
   } else if (!/^[A-Za-z0-9-]{4,30}$/.test(orderCode)) {
-    errors.orderCode = 'Mã đơn không đúng định dạng';
+    errors.orderCode = 'Ma don khong dung dinh dang';
   }
 
   if (!phone) {
-    errors.phone = 'Vui lòng nhập số điện thoại';
+    errors.phone = 'Vui long nhap so dien thoai';
   } else if (!/^(0\d{9}|\+84\d{9})$/.test(phone)) {
-    errors.phone = 'Số điện thoại không đúng định dạng';
+    errors.phone = 'So dien thoai khong dung dinh dang';
   }
 
   return errors;
@@ -87,10 +87,10 @@ const pageStyles = `
 const renderTrackingPageBody = ({ values = {}, fieldErrors = {}, submitError = '', isLoading = false, result = null } = {}) => `
   <div class="tracking-header">
     <div>
-      <h1>Tra cứu đơn hàng</h1>
-      <p>Nhập mã đơn và số điện thoại đã dùng khi đặt hàng để xem trạng thái, tổng quan món và lần cập nhật gần nhất.</p>
+      <h1>Tra cuu don hang</h1>
+      <p>Nhap ma don va so dien thoai da dung khi dat hang de xem trang thai, tong quan mon va lan cap nhat gan nhat.</p>
     </div>
-    <a class="button button-secondary" href="#/menu">Đặt món mới</a>
+    <a class="button button-secondary" href="#/menu">Dat mon moi</a>
   </div>
   ${TrackingForm({ values, fieldErrors, isLoading })}
   ${submitError ? `<div class="tracking-message" role="alert">${escapeHtml(submitError)}</div>` : ''}
@@ -144,7 +144,7 @@ export const mountGuestTrackingPage = () => {
       result = await orderService.trackGuestOrder(values);
     } catch (error) {
       fieldErrors = error?.errors && typeof error.errors === 'object' ? error.errors : {};
-      submitError = error?.message || 'Không thể tra cứu đơn hàng. Vui lòng thử lại.';
+      submitError = error?.message || 'Khong the tra cuu don hang. Vui long thu lai.';
     } finally {
       isLoading = false;
       render();

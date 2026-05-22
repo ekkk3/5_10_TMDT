@@ -27,67 +27,78 @@ const renderDevOtp = (loginOtp) =>
   loginOtp?.dev_otp ? `<p class="auth-dev-otp">Ma OTP demo: <strong>${escapeHtml(loginOtp.dev_otp)}</strong></p>` : '';
 
 const renderLoginForm = ({ mode = 'password', fieldErrors = {}, submitError = '', successMessage = '', values = {}, loginOtp = null, isSubmitting = false } = {}) => `
-  <div class="auth-panel">
-    <div class="auth-heading">
-      <h1>Dang nhap</h1>
-      <p>Dang nhap bang email/so dien thoai va mat khau, hoac nhan OTP neu muon xac thuc nhanh.</p>
+  <div class="login-layout">
+    <div class="auth-panel">
+      <div class="auth-heading">
+        <h1>Dang nhap</h1>
+        <p>Dang nhap bang email/so dien thoai va mat khau, hoac nhan OTP neu muon xac thuc nhanh.</p>
+      </div>
+      <div class="auth-tabs" role="tablist" aria-label="Phuong thuc dang nhap">
+        <button class="auth-tab ${mode === 'password' ? 'is-active' : ''}" type="button" data-login-mode="password">Mat khau</button>
+        <button class="auth-tab ${mode === 'otp' ? 'is-active' : ''}" type="button" data-login-mode="otp">OTP</button>
+      </div>
+      <form class="auth-form" data-login-form novalidate>
+        ${submitError ? `<div class="auth-alert auth-alert--error">${escapeHtml(submitError)}</div>` : ''}
+        ${successMessage ? `<div class="auth-alert auth-alert--success">${escapeHtml(successMessage)}</div>` : ''}
+        <label class="auth-field ${fieldErrors.identifier ? 'has-error' : ''}">
+          <span>Email hoac so dien thoai</span>
+          <input name="identifier" type="text" autocomplete="username" value="${escapeHtml(values.identifier || '')}" />
+          ${renderFieldError(fieldErrors, 'identifier')}
+        </label>
+        ${
+          mode === 'password'
+            ? `
+              <label class="auth-field ${fieldErrors.password ? 'has-error' : ''}">
+                <span>Mat khau</span>
+                <input name="password" type="password" autocomplete="current-password" />
+                ${renderFieldError(fieldErrors, 'password')}
+              </label>
+              <div class="auth-inline">
+                <a href="#/forgot-password">Quen mat khau?</a>
+              </div>
+            `
+            : `
+              ${renderDevOtp(loginOtp)}
+              ${
+                loginOtp?.verification_token
+                  ? `
+                    <label class="auth-field ${fieldErrors.otp ? 'has-error' : ''}">
+                      <span>Ma OTP</span>
+                      <input name="otp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456" />
+                      ${renderFieldError(fieldErrors, 'otp')}
+                    </label>
+                  `
+                  : ''
+              }
+            `
+        }
+        <button class="button button-primary auth-submit" type="submit" ${isSubmitting ? 'disabled' : ''}>
+          ${mode === 'password' ? (isSubmitting ? 'Dang dang nhap...' : 'Dang nhap') : loginOtp?.verification_token ? (isSubmitting ? 'Dang xac thuc...' : 'Xac thuc OTP') : (isSubmitting ? 'Dang gui OTP...' : 'Gui OTP')}
+        </button>
+        ${
+          mode === 'otp' && loginOtp?.verification_token
+            ? '<button class="button button-secondary auth-submit" type="button" data-resend-login-otp>Gui lai OTP</button>'
+            : ''
+        }
+        <p class="auth-alt">Chua co tai khoan? <a href="#/register">Dang ky</a></p>
+      </form>
     </div>
-    <div class="auth-tabs" role="tablist" aria-label="Phuong thuc dang nhap">
-      <button class="auth-tab ${mode === 'password' ? 'is-active' : ''}" type="button" data-login-mode="password">Mat khau</button>
-      <button class="auth-tab ${mode === 'otp' ? 'is-active' : ''}" type="button" data-login-mode="otp">OTP</button>
-    </div>
-    <form class="auth-form" data-login-form novalidate>
-      ${submitError ? `<div class="auth-alert auth-alert--error">${escapeHtml(submitError)}</div>` : ''}
-      ${successMessage ? `<div class="auth-alert auth-alert--success">${escapeHtml(successMessage)}</div>` : ''}
-      <label class="auth-field ${fieldErrors.identifier ? 'has-error' : ''}">
-        <span>Email hoac so dien thoai</span>
-        <input name="identifier" type="text" autocomplete="username" value="${escapeHtml(values.identifier || '')}" />
-        ${renderFieldError(fieldErrors, 'identifier')}
-      </label>
-      ${
-        mode === 'password'
-          ? `
-            <label class="auth-field ${fieldErrors.password ? 'has-error' : ''}">
-              <span>Mat khau</span>
-              <input name="password" type="password" autocomplete="current-password" />
-              ${renderFieldError(fieldErrors, 'password')}
-            </label>
-            <div class="auth-inline">
-              <a href="#/forgot-password">Quen mat khau?</a>
-            </div>
-          `
-          : `
-            ${renderDevOtp(loginOtp)}
-            ${
-              loginOtp?.verification_token
-                ? `
-                  <label class="auth-field ${fieldErrors.otp ? 'has-error' : ''}">
-                    <span>Ma OTP</span>
-                    <input name="otp" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="123456" />
-                    ${renderFieldError(fieldErrors, 'otp')}
-                  </label>
-                `
-                : ''
-            }
-          `
-      }
-      <button class="button button-primary auth-submit" type="submit" ${isSubmitting ? 'disabled' : ''}>
-        ${mode === 'password' ? (isSubmitting ? 'Dang dang nhap...' : 'Dang nhap') : loginOtp?.verification_token ? (isSubmitting ? 'Dang xac thuc...' : 'Xac thuc OTP') : (isSubmitting ? 'Dang gui OTP...' : 'Gui OTP')}
-      </button>
-      ${
-        mode === 'otp' && loginOtp?.verification_token
-          ? '<button class="button button-secondary auth-submit" type="button" data-resend-login-otp>Gui lai OTP</button>'
-          : ''
-      }
-      <p class="auth-alt">Chua co tai khoan? <a href="#/register">Dang ky</a></p>
-    </form>
+    <aside class="auth-recovery-panel">
+      <h2>Khoi phuc mat khau</h2>
+      <p>Nhap email hoac so dien thoai de nhan ma xac thuc, sau do tao mat khau moi.</p>
+      <a class="button button-secondary" href="#/forgot-password">Mo form khoi phuc</a>
+    </aside>
   </div>
 `;
 
 const pageStyles = `
   <style>
     .login-page { display: flex; justify-content: center; padding: 4px 0 28px; }
+    .login-layout { width: min(980px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 18px; align-items: start; }
     .auth-panel { width: min(560px, 100%); border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); padding: 24px; }
+    .auth-recovery-panel { display: grid; gap: 12px; padding: 24px; border: 1px solid var(--line); border-radius: 8px; background: #fffaf3; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
+    .auth-recovery-panel h2 { margin: 0; font-size: 24px; }
+    .auth-recovery-panel p { margin: 0; color: var(--muted); line-height: 1.5; }
     .auth-heading { margin-bottom: 18px; }
     .auth-heading h1 { margin: 0 0 8px; font-size: 34px; line-height: 1.15; }
     .auth-heading p { margin: 0; color: var(--muted); line-height: 1.5; }
@@ -108,6 +119,7 @@ const pageStyles = `
     .auth-alt a, .auth-inline a { color: var(--red); font-weight: 800; }
     .auth-inline { display: flex; justify-content: flex-end; }
     @media (max-width: 640px) {
+      .login-layout { grid-template-columns: 1fr; }
       .auth-panel { padding: 18px; }
       .auth-heading h1 { font-size: 28px; }
     }

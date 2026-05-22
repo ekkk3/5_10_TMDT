@@ -11,6 +11,7 @@ import { AdminOrderListPage, mountAdminOrderListPage } from '../features/admin-o
 import { KitchenKDSPage, mountKitchenKDSPage } from '../features/kitchen-kds/KitchenKDSPage.js';
 import { RegisterPage, mountRegisterPage } from '../features/auth/RegisterPage.js';
 import { LoginPage, mountLoginPage } from '../features/auth/LoginPage.js';
+import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage.js';
 import { AccountPage, mountAccountPage } from '../features/auth/AccountPage.js';
 import { AdminLoginPage, mountAdminLoginPage } from '../features/admin-auth/AdminLoginPage.js';
 import { AdminDashboardPage, mountAdminDashboardPage } from '../features/admin-auth/AdminDashboardPage.js';
@@ -55,7 +56,7 @@ const routes = {
     render: () => CustomerLayout(AccountPage()),
     afterRender: mountAccountPage
   },
-  '/forgot-password': () => AuthLayout(PlaceholderPage('Khoi phuc mat khau')),
+  '/forgot-password': () => AuthLayout(ForgotPasswordPage()),
   '/admin/login': {
     render: () => AuthLayout(AdminLoginPage()),
     afterRender: mountAdminLoginPage

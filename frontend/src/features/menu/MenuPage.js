@@ -159,9 +159,15 @@ const pageStyles = `
     .menu-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
     .menu-header h1 { margin: 0 0 8px; font-size: 34px; }
     .menu-header p { margin: 0; max-width: 680px; color: var(--muted); line-height: 1.5; }
-    .menu-controls { display: grid; grid-template-columns: minmax(220px, 1fr) 160px 160px auto; gap: 10px; margin-bottom: 18px; }
+    .menu-shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .menu-sidebar { position: sticky; top: 86px; display: grid; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
+    .menu-sidebar h2 { margin: 0; font-size: 20px; }
+    .menu-sidebar__section { display: grid; gap: 10px; }
+    .menu-sidebar__section h3 { margin: 0; color: var(--muted); font-size: 13px; text-transform: uppercase; }
+    .menu-results { display: grid; gap: 16px; }
+    .menu-controls { display: grid; gap: 10px; }
     .menu-input { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: inherit; color: var(--ink); background: #fff; }
-    .menu-categories { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+    .menu-categories { display: grid; gap: 8px; }
     .menu-chip { min-height: 38px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: #fff; color: var(--ink); font-weight: 700; cursor: pointer; }
     .menu-chip.is-active, .menu-chip:hover { background: var(--red); border-color: var(--red); color: #fff; }
     .menu-status { padding: 24px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--muted); }
@@ -176,6 +182,10 @@ const pageStyles = `
     .food-card p { min-height: 42px; margin: 10px 0; color: var(--muted); line-height: 1.45; }
     .food-card__meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; color: var(--muted); font-size: 14px; }
     .food-card__actions { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; }
+    .menu-store-footer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fffaf3; }
+    .menu-store-footer div { display: grid; gap: 4px; }
+    .menu-store-footer span { color: var(--muted); font-size: 13px; font-weight: 800; }
+    .menu-store-footer strong { color: var(--ink); }
     .button:disabled { cursor: not-allowed; opacity: 0.55; }
     .menu-modal-root:not(:empty) { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 18px; }
     .menu-modal__backdrop { position: absolute; inset: 0; background: rgba(36, 19, 10, 0.58); }
@@ -216,12 +226,15 @@ const pageStyles = `
     .review-item div { display: flex; justify-content: space-between; gap: 12px; }
     .review-item p, .review-empty { margin: 8px 0 0; color: var(--muted); }
     @media (max-width: 920px) {
+      .menu-shell { grid-template-columns: 1fr; }
+      .menu-sidebar { position: static; }
       .menu-controls { grid-template-columns: 1fr 1fr; }
+      .menu-categories { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .food-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 640px) {
       .menu-header { display: block; }
-      .menu-controls, .food-grid, .menu-modal { grid-template-columns: 1fr; }
+      .menu-controls, .menu-categories, .food-grid, .menu-modal, .menu-store-footer { grid-template-columns: 1fr; }
       .food-option-group__choices--size { grid-template-columns: 1fr; }
       .menu-modal__image { min-height: 240px; }
       .food-card__actions { grid-template-columns: 1fr; }
@@ -241,16 +254,30 @@ export const MenuPage = () => `
     </div>
 
 
-    <form class="menu-controls" data-menu-form>
-      <input class="menu-input" name="keyword" type="search" placeholder="Tim burger, ga ran, do uong..." autocomplete="off" />
-      <input class="menu-input" name="minPrice" type="number" min="0" step="1000" placeholder="Gia tu" />
-      <input class="menu-input" name="maxPrice" type="number" min="0" step="1000" placeholder="Gia den" />
-      <button class="button button-primary" type="submit">Tim kiem</button>
-    </form>
+    <div class="menu-shell">
+      <aside class="menu-sidebar" aria-label="Bo loc thuc don">
+        <h2>Bo loc</h2>
+        <form class="menu-controls" data-menu-form>
+          <input class="menu-input" name="keyword" type="search" placeholder="Tim burger, ga ran, do uong..." autocomplete="off" />
+          <input class="menu-input" name="minPrice" type="number" min="0" step="1000" placeholder="Gia tu" />
+          <input class="menu-input" name="maxPrice" type="number" min="0" step="1000" placeholder="Gia den" />
+          <button class="button button-primary" type="submit">Tim kiem</button>
+        </form>
+        <div class="menu-sidebar__section">
+          <h3>Danh muc</h3>
+          <div class="menu-categories" data-menu-categories></div>
+        </div>
+      </aside>
 
-
-    <div class="menu-categories" data-menu-categories></div>
-    <div data-menu-content class="menu-status">Dang tai thuc don...</div>
+      <div class="menu-results">
+        <div data-menu-content class="menu-status">Dang tai thuc don...</div>
+        <footer class="menu-store-footer" aria-label="Thong tin cua hang">
+          <div><span>Gio phuc vu</span><strong>08:00 - 22:00 hang ngay</strong></div>
+          <div><span>Khu vuc giao</span><strong>Quan 1, Quan 3, Binh Thanh</strong></div>
+          <div><span>Ho tro</span><strong>0900 000 001</strong></div>
+        </footer>
+      </div>
+    </div>
     <div class="menu-modal-root" data-menu-modal-root></div>
   </section>
 `;

@@ -17,10 +17,10 @@ const escapeHtml = (value = '') =>
 const formatMoney = (value) => moneyFormatter.format(Number(value || 0));
 
 const formatDateTime = (value) => {
-  if (!value) return 'Chưa có cập nhật';
+  if (!value) return 'Chua co cap nhat';
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Chưa có cập nhật';
+  if (Number.isNaN(date.getTime())) return 'Chua co cap nhat';
 
   return new Intl.DateTimeFormat('vi-VN', {
     dateStyle: 'medium',
@@ -49,7 +49,7 @@ const renderOptions = (options = []) => {
 
 const renderItems = (items = []) => {
   if (!items.length) {
-    return '<p class="tracking-result__muted">Đơn hàng chưa có dữ liệu món.</p>';
+    return '<p class="tracking-result__muted">Don hang chua co du lieu mon.</p>';
   }
 
   return `
@@ -60,7 +60,7 @@ const renderItems = (items = []) => {
             <li class="tracking-items__row">
               <div>
                 <strong>${escapeHtml(item.food_name)}</strong>
-                <span>Số lượng: ${Number(item.quantity || 0)}</span>
+                <span>So luong: ${Number(item.quantity || 0)}</span>
                 ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ''}
                 ${renderOptions(item.options || [])}
               </div>
@@ -80,7 +80,7 @@ export const TrackingResult = (order) => {
     <section class="tracking-result" aria-live="polite">
       <div class="tracking-result__header">
         <div>
-          <span class="tracking-result__eyebrow">Mã đơn ${escapeHtml(order.order_code)}</span>
+          <span class="tracking-result__eyebrow">Ma don ${escapeHtml(order.order_code)}</span>
           <h2>${escapeHtml(getOrderStatusLabel(order.order_status))}</h2>
         </div>
         <strong class="tracking-result__amount">${formatMoney(order.total_amount)}</strong>
@@ -88,19 +88,19 @@ export const TrackingResult = (order) => {
 
       <div class="tracking-summary">
         <div>
-          <span>Khách hàng</span>
+          <span>Khach hang</span>
           <strong>${escapeHtml(order.guest_name)}</strong>
         </div>
         <div>
-          <span>Số điện thoại</span>
+          <span>So dien thoai</span>
           <strong>${escapeHtml(order.guest_phone)}</strong>
         </div>
         <div>
-          <span>Thanh toán</span>
+          <span>Thanh toan</span>
           <strong>${escapeHtml(order.payment_status)}</strong>
         </div>
         <div>
-          <span>Cập nhật gần nhất</span>
+          <span>Cap nhat gan nhat</span>
           <strong>${escapeHtml(formatDateTime(order.updated_at))}</strong>
         </div>
       </div>
@@ -109,20 +109,20 @@ export const TrackingResult = (order) => {
         order.order_status === 'CANCELLED'
           ? `
             <div class="tracking-cancel">
-              <strong>Lý do hủy</strong>
-              <p>${escapeHtml(order.cancel_reason || 'Chưa có lý do hủy.')}</p>
+              <strong>Ly do huy</strong>
+              <p>${escapeHtml(order.cancel_reason || 'Chua co ly do huy.')}</p>
             </div>
           `
           : ''
       }
 
       <div class="tracking-section">
-        <h3>Trạng thái đơn</h3>
+        <h3>Trang thai don</h3>
         ${OrderStatusTimeline({ orderStatus: order.order_status, statusHistory: order.status_history || [] })}
       </div>
 
       <div class="tracking-section">
-        <h3>Tổng quan món</h3>
+        <h3>Tong quan mon</h3>
         ${renderItems(order.items || [])}
       </div>
     </section>
