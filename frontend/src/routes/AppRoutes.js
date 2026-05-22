@@ -9,6 +9,9 @@ import { GuestOrderResultPage } from '../features/guest-order/GuestOrderResultPa
 import { GuestTrackingPage, mountGuestTrackingPage } from '../features/guest-tracking/GuestTrackingPage.js';
 import { AdminOrderListPage, mountAdminOrderListPage } from '../features/admin-orders/AdminOrderListPage.js';
 import { KitchenKDSPage, mountKitchenKDSPage } from '../features/kitchen-kds/KitchenKDSPage.js';
+import { RegisterPage, mountRegisterPage } from '../features/auth/RegisterPage.js';
+import { LoginPage, mountLoginPage } from '../features/auth/LoginPage.js';
+import { AccountPage, mountAccountPage } from '../features/auth/AccountPage.js';
 
 
 const PlaceholderPage = (title) => `
@@ -38,7 +41,19 @@ const routes = {
     render: () => CustomerLayout(GuestTrackingPage()),
     afterRender: mountGuestTrackingPage
   },
-  '/login': () => AuthLayout(PlaceholderPage('Dang nhap')),
+  '/login': {
+    render: () => AuthLayout(LoginPage()),
+    afterRender: mountLoginPage
+  },
+  '/register': {
+    render: () => AuthLayout(RegisterPage()),
+    afterRender: mountRegisterPage
+  },
+  '/account': {
+    render: () => CustomerLayout(AccountPage()),
+    afterRender: mountAccountPage
+  },
+  '/forgot-password': () => AuthLayout(PlaceholderPage('Khoi phuc mat khau')),
   '/admin': () => AdminLayout(`
     <section class="placeholder-page">
       <h1>Quan tri</h1>
