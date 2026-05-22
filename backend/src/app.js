@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'src', 'index.html'));
 });
 
-app.get(['/menu', '/cart', '/checkout', '/guest-order/result', '/orders/search', '/login', '/register', '/account', '/forgot-password', '/admin', '/admin/orders', '/kitchen'], (req, res) => {
+app.get(['/menu', '/cart', '/checkout', '/guest-order/result', '/orders/search', '/login', '/register', '/account', '/forgot-password', '/admin/login', '/admin', '/admin/orders', '/kitchen'], (req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'src', 'index.html'));
 });
 

@@ -9,8 +9,38 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 const MAX_VERIFY_ATTEMPTS = 5;
 const SESSION_TTL = '2h';
 const JWT_SECRET = process.env.JWT_SECRET || 'fast-food-system-dev-secret';
+const TEMP_LOCK_TTL_MS = 10 * 60 * 1000;
 const pendingRegistrations = new Map();
 const pendingLoginOtps = new Map();
+const pendingAdminLoginOtps = new Map();
+const failedAdminLoginAttempts = new Map();
+
+const INTERNAL_ROLE_ACCESS = {
+  ADMIN: {
+    dashboardPath: '/admin',
+    permissions: ['ADMIN_DASHBOARD', 'ORDER_MANAGE', 'KITCHEN_KDS', 'DELIVERY_MANAGE', 'CUSTOMER_SUPPORT', 'MARKETING_MANAGE']
+  },
+  MANAGER: {
+    dashboardPath: '/admin',
+    permissions: ['ADMIN_DASHBOARD', 'ORDER_MANAGE', 'KITCHEN_KDS', 'DELIVERY_MANAGE', 'CUSTOMER_SUPPORT', 'MARKETING_MANAGE']
+  },
+  KITCHEN: {
+    dashboardPath: '/kitchen',
+    permissions: ['KITCHEN_KDS']
+  },
+  DELIVERY: {
+    dashboardPath: '/admin/delivery',
+    permissions: ['DELIVERY_MANAGE']
+  },
+  CSKH: {
+    dashboardPath: '/admin/support',
+    permissions: ['CUSTOMER_SUPPORT']
+  },
+  MARKETING: {
+    dashboardPath: '/admin/marketing',
+    permissions: ['MARKETING_MANAGE']
+  }
+};
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
 const normalizePhone = (phone) => String(phone || '').trim().replace(/[\s.-]/g, '');
@@ -249,6 +279,46 @@ const createSession = (account) => {
   };
 };
 
+const createAdminSession = (account, access) => {
+  const token = jwt.sign(
+    {
+      sub: String(account.user_id),
+      role: account.role_name,
+      scope: 'admin'
+    },
+    JWT_SECRET,
+    { expiresIn: SESSION_TTL }
+  );
+
+  return {
+    token,
+    token_type: 'Bearer',
+    expires_in_seconds: 2 * 60 * 60,
+    user: toPublicAccount(account),
+    permissions: access.permissions,
+    dashboard_path: access.dashboardPath
+  };
+};
+
+const getInternalAccess = (account) => INTERNAL_ROLE_ACCESS[String(account?.role_name || '').toUpperCase()] || null;
+
+const buildUnauthorizedAdminResult = () =>
+  buildResult(403, 'Tai khoan chua duoc phan quyen truy cap he thong quan tri');
+
+const validateAccountCanAdminLogin = (account) => {
+  const accountError = validateAccountCanLogin(account);
+
+  if (accountError) return accountError;
+
+  const access = getInternalAccess(account);
+
+  if (!access) {
+    return buildUnauthorizedAdminResult();
+  }
+
+  return null;
+};
+
 const cleanupExpiredRegistrations = () => {
   const now = Date.now();
 
@@ -267,9 +337,56 @@ const cleanupExpiredLoginOtps = () => {
       pendingLoginOtps.delete(token);
     }
   }
+
+  for (const [token, loginOtp] of pendingAdminLoginOtps.entries()) {
+    if (loginOtp.expiresAt <= now) {
+      pendingAdminLoginOtps.delete(token);
+    }
+  }
 };
 
 const createOtp = () => String(crypto.randomInt(100000, 1000000));
+
+const getAdminAttemptKey = (identifier) => `${identifier.type}:${identifier.value}`;
+
+const getActiveAdminLock = (identifier) => {
+  const key = getAdminAttemptKey(identifier);
+  const attempt = failedAdminLoginAttempts.get(key);
+
+  if (!attempt?.lockedUntil) return null;
+
+  if (attempt.lockedUntil <= Date.now()) {
+    failedAdminLoginAttempts.delete(key);
+    return null;
+  }
+
+  return attempt;
+};
+
+const recordFailedAdminLogin = (identifier) => {
+  const key = getAdminAttemptKey(identifier);
+  const attempt = failedAdminLoginAttempts.get(key) || { count: 0, lockedUntil: null };
+  const count = attempt.count + 1;
+  const lockedUntil = count >= MAX_VERIFY_ATTEMPTS ? Date.now() + TEMP_LOCK_TTL_MS : null;
+
+  failedAdminLoginAttempts.set(key, { count, lockedUntil });
+
+  if (lockedUntil) {
+    return buildResult(423, 'Tai khoan tam thoi bi khoa do dang nhap sai nhieu lan. Vui long thu lai sau 10 phut.');
+  }
+
+  return buildResult(401, 'Tai khoan hoac thong tin xac thuc khong dung', {
+    credentials: 'Thong tin dang nhap khong dung'
+  });
+};
+
+const clearFailedAdminLogin = (identifier) => {
+  failedAdminLoginAttempts.delete(getAdminAttemptKey(identifier));
+};
+
+const writeAdminLoginLog = ({ account, method }) => {
+  console.info(`[ADMIN_LOGIN] user_id=${account.user_id} role=${account.role_name} method=${method} at=${new Date().toISOString()}`);
+};
 
 const loginWithPassword = async ({ identifier, password }) => {
   const normalizedIdentifier = normalizeIdentifier(identifier);
@@ -299,6 +416,169 @@ const loginWithPassword = async ({ identifier, password }) => {
   return {
     ok: true,
     data: createSession(account)
+  };
+};
+
+const loginAdminWithPassword = async ({ identifier, password }) => {
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+  const identifierError = validateIdentifier(normalizedIdentifier);
+
+  if (identifierError) {
+    return buildResult(400, 'Thong tin dang nhap quan tri khong hop le', { identifier: identifierError });
+  }
+
+  const activeLock = getActiveAdminLock(normalizedIdentifier);
+
+  if (activeLock) {
+    return buildResult(423, 'Tai khoan tam thoi bi khoa do dang nhap sai nhieu lan. Vui long thu lai sau 10 phut.');
+  }
+
+  if (!String(password || '')) {
+    return buildResult(400, 'Thong tin dang nhap quan tri khong hop le', { password: 'Vui long nhap mat khau' });
+  }
+
+  const account = await findAccountByIdentifier(normalizedIdentifier);
+  const accountError = validateAccountCanAdminLogin(account);
+
+  if (accountError) {
+    if (accountError.statusCode === 401) {
+      return recordFailedAdminLogin(normalizedIdentifier);
+    }
+
+    return accountError;
+  }
+
+  const isPasswordValid = await bcrypt.compare(String(password), account.password_hash || '');
+
+  if (!isPasswordValid) {
+    return recordFailedAdminLogin(normalizedIdentifier);
+  }
+
+  const access = getInternalAccess(account);
+  clearFailedAdminLogin(normalizedIdentifier);
+  writeAdminLoginLog({ account, method: 'PASSWORD' });
+
+  return {
+    ok: true,
+    data: createAdminSession(account, access)
+  };
+};
+
+const requestAdminLoginOtp = async ({ identifier }) => {
+  cleanupExpiredLoginOtps();
+
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+  const identifierError = validateIdentifier(normalizedIdentifier);
+
+  if (identifierError) {
+    return buildResult(400, 'Thong tin dang nhap quan tri khong hop le', { identifier: identifierError });
+  }
+
+  const activeLock = getActiveAdminLock(normalizedIdentifier);
+
+  if (activeLock) {
+    return buildResult(423, 'Tai khoan tam thoi bi khoa do dang nhap sai nhieu lan. Vui long thu lai sau 10 phut.');
+  }
+
+  const account = await findAccountByIdentifier(normalizedIdentifier);
+  const accountError = validateAccountCanAdminLogin(account);
+
+  if (accountError) {
+    if (accountError.statusCode === 401) {
+      return recordFailedAdminLogin(normalizedIdentifier);
+    }
+
+    return accountError;
+  }
+
+  const receiver = normalizedIdentifier.type === 'email' ? account.email : account.phone;
+
+  if (!receiver) {
+    return buildResult(400, 'Tai khoan chua co kenh nhan OTP phu hop');
+  }
+
+  const code = createOtp();
+  const token = crypto.randomBytes(24).toString('hex');
+  const channel = normalizedIdentifier.type === 'email' ? 'EMAIL' : 'SMS';
+
+  pendingAdminLoginOtps.set(token, {
+    userId: account.user_id,
+    identifier: normalizedIdentifier,
+    code,
+    channel,
+    receiver,
+    expiresAt: Date.now() + OTP_TTL_MS,
+    attempts: 0
+  });
+
+  await otpEmailService.sendVerificationCode({ channel, receiver, code });
+
+  const data = {
+    verification_token: token,
+    channel,
+    receiver: otpEmailService.maskReceiver(receiver),
+    expires_in_seconds: Math.floor(OTP_TTL_MS / 1000)
+  };
+
+  if (env.nodeEnv !== 'production') {
+    data.dev_otp = code;
+  }
+
+  return {
+    ok: true,
+    data
+  };
+};
+
+const verifyAdminLoginOtp = async ({ verificationToken, otp }) => {
+  cleanupExpiredLoginOtps();
+
+  const token = String(verificationToken || '').trim();
+  const code = String(otp || '').trim();
+  const loginOtp = pendingAdminLoginOtps.get(token);
+
+  if (!loginOtp) {
+    return buildResult(400, 'OTP sai hoac da het han. Vui long gui lai ma.');
+  }
+
+  if (!/^\d{6}$/.test(code)) {
+    return buildResult(400, 'Ma OTP gom 6 chu so', { otp: 'Ma OTP gom 6 chu so' });
+  }
+
+  if (loginOtp.expiresAt <= Date.now()) {
+    pendingAdminLoginOtps.delete(token);
+    return buildResult(400, 'OTP da het han. Vui long gui lai ma.');
+  }
+
+  if (loginOtp.code !== code) {
+    loginOtp.attempts += 1;
+
+    if (loginOtp.attempts >= MAX_VERIFY_ATTEMPTS) {
+      pendingAdminLoginOtps.delete(token);
+      recordFailedAdminLogin(loginOtp.identifier);
+      return buildResult(400, 'OTP sai qua so lan cho phep. Vui long dang nhap lai.');
+    }
+
+    pendingAdminLoginOtps.set(token, loginOtp);
+    return buildResult(400, 'OTP khong dung. Vui long kiem tra lai.', { otp: 'OTP khong dung' });
+  }
+
+  const account = await findAccountById(loginOtp.userId);
+  const accountError = validateAccountCanAdminLogin(account);
+
+  if (accountError) {
+    pendingAdminLoginOtps.delete(token);
+    return accountError;
+  }
+
+  const access = getInternalAccess(account);
+  pendingAdminLoginOtps.delete(token);
+  clearFailedAdminLogin(loginOtp.identifier);
+  writeAdminLoginLog({ account, method: 'OTP' });
+
+  return {
+    ok: true,
+    data: createAdminSession(account, access)
   };
 };
 
@@ -423,6 +703,40 @@ const getCurrentUser = async (authorizationHeader) => {
     };
   } catch (error) {
     return buildResult(401, 'Phien dang nhap da het han. Vui long dang nhap lai.');
+  }
+};
+
+const getCurrentAdminUser = async (authorizationHeader) => {
+  const [scheme, token] = String(authorizationHeader || '').split(' ');
+
+  if (scheme !== 'Bearer' || !token) {
+    return buildResult(401, 'Phien dang nhap quan tri da het han. Vui long dang nhap lai.');
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.scope !== 'admin') {
+      return buildUnauthorizedAdminResult();
+    }
+
+    const account = await findAccountById(decoded.sub);
+    const accountError = validateAccountCanAdminLogin(account);
+
+    if (accountError) return accountError;
+
+    const access = getInternalAccess(account);
+
+    return {
+      ok: true,
+      data: {
+        user: toPublicAccount(account),
+        permissions: access.permissions,
+        dashboard_path: access.dashboardPath
+      }
+    };
+  } catch (error) {
+    return buildResult(401, 'Phien dang nhap quan tri da het han. Vui long dang nhap lai.');
   }
 };
 
@@ -597,6 +911,10 @@ module.exports = {
   loginWithPassword,
   requestLoginOtp,
   verifyLoginOtp,
+  loginAdminWithPassword,
+  requestAdminLoginOtp,
+  verifyAdminLoginOtp,
+  getCurrentAdminUser,
   getCurrentUser,
   logout,
   startRegistration,
