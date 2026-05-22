@@ -8,6 +8,7 @@ import { GuestCheckoutPage, mountGuestCheckoutPage } from '../features/guest-ord
 import { GuestOrderResultPage } from '../features/guest-order/GuestOrderResultPage.js';
 import { GuestTrackingPage, mountGuestTrackingPage } from '../features/guest-tracking/GuestTrackingPage.js';
 import { AdminOrderListPage, mountAdminOrderListPage } from '../features/admin-orders/AdminOrderListPage.js';
+import { KitchenKDSPage, mountKitchenKDSPage } from '../features/kitchen-kds/KitchenKDSPage.js';
 
 
 const PlaceholderPage = (title) => `
@@ -48,11 +49,23 @@ const routes = {
   '/admin/orders': {
     render: () => AdminLayout(AdminOrderListPage()),
     afterRender: mountAdminOrderListPage
+  },
+  '/kitchen': {
+    render: () => AdminLayout(KitchenKDSPage()),
+    afterRender: mountKitchenKDSPage
   }
 };
 
 
-const getPath = () => window.location.hash.replace('#', '') || '/';
+const getPath = () => {
+  const hashPath = window.location.hash.replace('#', '');
+
+  if (hashPath) {
+    return hashPath;
+  }
+
+  return window.location.pathname === '/' ? '/' : window.location.pathname;
+};
 
 
 export const AppRoutes = () => {
