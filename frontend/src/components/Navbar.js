@@ -3,7 +3,8 @@ const links = [
   { label: 'Gio hang', href: '#/cart' },
   { label: 'Tra cuu don', href: '#/orders/search' },
   { label: 'Dang nhap', href: '#/login' },
-  { label: 'Admin', href: '#/admin' }
+  { label: 'Admin', href: '#/admin' },
+  { label: 'KDS', href: '#/kitchen' }
 ];
 
 export const Navbar = () => `
