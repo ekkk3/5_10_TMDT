@@ -1,5 +1,6 @@
 -- Tạo cơ sở dữ liệu
-CREATE DATABASE IF NOT EXISTS fast_food_system;
+DROP DATABASE IF EXISTS fast_food_system;
+CREATE DATABASE fast_food_system;
 USE fast_food_system;
 
 -- 1. Bảng roles [cite: 2, 3, 4]
@@ -139,6 +140,7 @@ CREATE TABLE orders (
     order_id BIGINT PRIMARY KEY AUTO_INCREMENT,
     order_code VARCHAR(30) NOT NULL UNIQUE,
     user_id BIGINT NULL,
+    customer_type ENUM('MEMBER','GUEST') DEFAULT 'MEMBER',
     guest_name VARCHAR(100) NULL,
     guest_phone VARCHAR(20) NULL,
     guest_email VARCHAR(100) NULL,
@@ -149,6 +151,7 @@ CREATE TABLE orders (
     total_amount DECIMAL(12,2) NOT NULL,
     order_status ENUM('PENDING','CONFIRMED','COOKING','READY','DELIVERING','COMPLETED','CANCELLED') DEFAULT 'PENDING',
     payment_status ENUM('UNPAID','COD','PAID','FAILED','VERIFYING','REFUNDED') DEFAULT 'UNPAID',
+    payment_method ENUM('COD','ONLINE_MOCK') DEFAULT 'COD',
     note VARCHAR(255) NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
