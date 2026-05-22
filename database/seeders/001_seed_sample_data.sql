@@ -108,7 +108,14 @@ INSERT INTO vouchers (
   ('MEMBER50K', 'Uu dai rieng cho thanh vien', 'AMOUNT', 50000, 200000, NULL, 1, 'PERSONAL', '2026-01-01 00:00:00', '2026-12-31 23:59:59', 'ACTIVE')
 ON DUPLICATE KEY UPDATE
   voucher_name = VALUES(voucher_name),
+  discount_type = VALUES(discount_type),
   discount_value = VALUES(discount_value),
+  min_order_amount = VALUES(min_order_amount),
+  max_discount_amount = VALUES(max_discount_amount),
+  usage_limit = VALUES(usage_limit),
+  target_type = VALUES(target_type),
+  start_date = VALUES(start_date),
+  end_date = VALUES(end_date),
   status = VALUES(status);
 
 INSERT INTO user_vouchers (user_id, voucher_id, status)

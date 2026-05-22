@@ -1,4 +1,6 @@
 import { CartContext } from '../../contexts/CartContext.js';
+import { voucherService } from '../voucher/voucherService.js';
+import { CartSummary } from './components/CartSummary.js';
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN', {
   style: 'currency',
@@ -68,7 +70,7 @@ const renderEmptyState = () => `
   </section>
 `;
 
-const renderCartContent = () => {
+const renderCartContent = ({ voucherError = '', isApplyingVoucher = false } = {}) => {
   const cartItems = CartContext.cartItems;
   if (!cartItems.length) return renderEmptyState();
 
@@ -79,27 +81,15 @@ const renderCartContent = () => {
       <section class="cart-list" aria-label="Danh sach mon trong gio">
         ${cartItems.map(renderCartItem).join('')}
       </section>
-      <aside class="cart-summary" aria-label="Tong tien gio hang">
-        <h2>Tong gio hang</h2>
-        <div class="cart-summary__row">
-          <span>So luong mon</span>
-          <strong>${CartContext.getTotalQuantity()}</strong>
-        </div>
-        <div class="cart-summary__row">
-          <span>Tam tinh</span>
-          <strong>${formatMoney(subtotal)}</strong>
-        </div>
-        <div class="cart-summary__row">
-          <span>Phi giao hang du kien</span>
-          <strong>${formatMoney(0)}</strong>
-        </div>
-        <div class="cart-summary__total">
-          <span>Tong tien</span>
-          <strong>${formatMoney(subtotal)}</strong>
-        </div>
-        <button class="button button-primary cart-checkout" type="button" data-continue-order>Tiep tuc dat hang</button>
-        <button class="button button-secondary cart-clear" type="button" data-clear-cart>Xoa gio hang</button>
-      </aside>
+      ${CartSummary({
+        totalQuantity: CartContext.getTotalQuantity(),
+        subtotal,
+        appliedVoucher: CartContext.appliedVoucher,
+        discountAmount: CartContext.discountAmount,
+        finalTotal: CartContext.getFinalTotal(),
+        voucherError,
+        isApplyingVoucher
+      })}
     </div>
   `;
 };
@@ -129,8 +119,18 @@ const pageStyles = `
     .cart-summary h2 { margin: 0 0 4px; font-size: 22px; }
     .cart-summary__row, .cart-summary__total { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); }
     .cart-summary__row strong { color: var(--ink); }
+    .cart-summary__discount strong { color: #16803a; }
     .cart-summary__total { border-top: 1px solid var(--line); padding-top: 12px; color: var(--ink); font-size: 18px; font-weight: 800; }
     .cart-summary__total strong { color: var(--red); }
+    .voucher-form { display: grid; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .voucher-form label, .voucher-box__label { color: var(--muted); font-size: 13px; font-weight: 800; }
+    .voucher-form__controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .voucher-form__controls input { min-width: 0; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--ink); font: inherit; text-transform: uppercase; }
+    .voucher-form__controls button { min-width: 86px; }
+    .voucher-form__error { margin: 0; color: #b3261e; font-size: 13px; line-height: 1.35; }
+    .voucher-box { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px; border: 1px solid #9bd4aa; border-radius: 8px; background: #f3fbf5; }
+    .voucher-box strong { display: block; margin-top: 3px; color: #166534; }
+    .voucher-box__remove { padding-inline: 10px; white-space: nowrap; }
     .cart-empty { padding: 32px; border: 1px dashed var(--line); border-radius: 8px; background: #fff; text-align: center; }
     .cart-empty h2 { margin: 0 0 10px; font-size: 26px; }
     .cart-empty p { margin: 0 auto 18px; max-width: 520px; color: var(--muted); line-height: 1.5; }
@@ -143,6 +143,7 @@ const pageStyles = `
       .cart-item { grid-template-columns: 92px minmax(0, 1fr); }
       .cart-item__image { width: 92px; height: 92px; }
       .cart-item__actions { grid-column: 1 / -1; }
+      .voucher-form__controls { grid-template-columns: 1fr; }
     }
   </style>
 `;
@@ -166,9 +167,11 @@ export const mountCartPage = () => {
   if (!root) return;
 
   const contentRoot = root.querySelector('[data-cart-content]');
+  let voucherError = '';
+  let isApplyingVoucher = false;
 
   const render = () => {
-    contentRoot.innerHTML = renderCartContent();
+    contentRoot.innerHTML = renderCartContent({ voucherError, isApplyingVoucher });
   };
 
   contentRoot.addEventListener('click', (event) => {
@@ -176,6 +179,7 @@ export const mountCartPage = () => {
     const cartItemId = cartItem?.dataset.cartItemId;
 
     if (event.target.closest('[data-clear-cart]')) {
+      voucherError = '';
       CartContext.clearCart();
       render();
       return;
@@ -189,6 +193,7 @@ export const mountCartPage = () => {
     if (!cartItemId) return;
 
     if (event.target.closest('[data-remove-cart-item]')) {
+      voucherError = '';
       CartContext.removeItem(cartItemId);
       render();
       return;
@@ -198,7 +203,42 @@ export const mountCartPage = () => {
     if (stepButton) {
       const input = cartItem.querySelector('[data-cart-quantity]');
       const nextQuantity = Math.max(1, Number(input.value || 1) + Number(stepButton.dataset.quantityStep));
+      voucherError = '';
       CartContext.updateQuantity(cartItemId, nextQuantity);
+      render();
+    }
+  });
+
+  contentRoot.addEventListener('submit', async (event) => {
+    const form = event.target.closest('[data-voucher-form]');
+    if (!form) return;
+
+    event.preventDefault();
+    const code = new FormData(form).get('voucherCode');
+
+    if (!String(code || '').trim()) {
+      voucherError = 'Vui long nhap ma voucher';
+      render();
+      return;
+    }
+
+    try {
+      isApplyingVoucher = true;
+      voucherError = '';
+      render();
+
+      const voucher = await voucherService.applyPublicVoucher({
+        code,
+        orderTotal: CartContext.getSubtotal()
+      });
+
+      CartContext.applyVoucher(voucher);
+      voucherError = '';
+    } catch (error) {
+      CartContext.removeVoucher();
+      voucherError = error?.message || 'Khong the ap dung voucher';
+    } finally {
+      isApplyingVoucher = false;
       render();
     }
   });
@@ -209,7 +249,16 @@ export const mountCartPage = () => {
 
     const cartItem = input.closest('[data-cart-item-id]');
     const nextQuantity = Math.max(1, Number.parseInt(input.value, 10) || 1);
+    voucherError = '';
     CartContext.updateQuantity(cartItem.dataset.cartItemId, nextQuantity);
+    render();
+  });
+
+  contentRoot.addEventListener('click', (event) => {
+    if (!event.target.closest('[data-remove-voucher]')) return;
+
+    voucherError = '';
+    CartContext.removeVoucher();
     render();
   });
 };
