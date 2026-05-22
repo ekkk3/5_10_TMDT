@@ -7,6 +7,7 @@ import { CartPage, mountCartPage } from '../features/cart/CartPage.js';
 import { GuestCheckoutPage, mountGuestCheckoutPage } from '../features/guest-order/GuestCheckoutPage.js';
 import { GuestOrderResultPage } from '../features/guest-order/GuestOrderResultPage.js';
 import { GuestTrackingPage, mountGuestTrackingPage } from '../features/guest-tracking/GuestTrackingPage.js';
+import { AdminOrderListPage, mountAdminOrderListPage } from '../features/admin-orders/AdminOrderListPage.js';
 
 
 const PlaceholderPage = (title) => `
@@ -37,7 +38,17 @@ const routes = {
     afterRender: mountGuestTrackingPage
   },
   '/login': () => AuthLayout(PlaceholderPage('Dang nhap')),
-  '/admin': () => AdminLayout(PlaceholderPage('Quan tri'))
+  '/admin': () => AdminLayout(`
+    <section class="placeholder-page">
+      <h1>Quan tri</h1>
+      <p>Mo man hinh xu ly don hang de xac nhan, huy va theo doi don moi.</p>
+      <a class="button button-primary" href="#/admin/orders">Quan ly don hang</a>
+    </section>
+  `),
+  '/admin/orders': {
+    render: () => AdminLayout(AdminOrderListPage()),
+    afterRender: mountAdminOrderListPage
+  }
 };
 
 
