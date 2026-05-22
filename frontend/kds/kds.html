@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KDS - Fast Food System</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">KDS</span>
+      <span>Man hinh bep</span>
+    </div>
+    <div class="actions">
+      <button class="secondary" type="button" id="refreshKds">Tai lai</button>
+      <button class="danger" type="button" id="logoutButton">Dang xuat</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="section-header">
+      <div>
+        <h1>Don can che bien</h1>
+        <p class="muted">Don chi xuat hien o day sau khi Admin bam "Xac nhan don".</p>
+      </div>
+    </div>
+    <section id="kdsBoard" class="kds-board"></section>
+    <p id="kdsMessage" class="empty" hidden></p>
+  </main>
+
+  <script src="kds-script.js"></script>
+</body>
+</html>

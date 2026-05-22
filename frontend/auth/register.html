@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dang ky - Fast Food System</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-box">
+      <div class="brand">
+        <span class="brand-mark">FF</span>
+        <span>Fast Food System</span>
+      </div>
+      <h1>Dang ky</h1>
+      <form id="registerForm">
+        <label>
+          Username
+          <input name="username" autocomplete="username" required>
+        </label>
+        <label>
+          Mat khau
+          <input name="password" type="password" autocomplete="new-password" minlength="6" required>
+        </label>
+        <label>
+          Vai tro
+          <select name="role">
+            <option value="customer">Khach hang</option>
+            <option value="kitchen">Nhan vien bep</option>
+          </select>
+        </label>
+        <button type="submit">Tao tai khoan</button>
+      </form>
+      <p class="message" id="authMessage"></p>
+      <p class="muted">Da co tai khoan? <a href="login.html">Dang nhap</a></p>
+    </section>
+  </main>
+  <script src="auth-script.js"></script>
+</body>
+</html>
