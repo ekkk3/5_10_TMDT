@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Fast Food System</title>
+  <link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+  <main class="admin-layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark">FF</span>
+        <span>Admin</span>
+      </div>
+      <nav>
+        <button class="active" type="button" data-tab="products">Quan ly mon an</button>
+        <button type="button" data-tab="orders">Don hang moi</button>
+        <button class="secondary" type="button" id="logoutButton">Dang xuat</button>
+      </nav>
+    </aside>
+
+    <section class="admin-main">
+      <section id="productsTab">
+        <div class="section-header">
+          <div>
+            <h1>Quan ly mon an</h1>
+            <p class="muted">Them, sua, xoa, an/hien mon an cho thuc don khach hang.</p>
+          </div>
+        </div>
+
+        <form id="productForm" class="panel form-grid">
+          <input type="hidden" name="id">
+          <label>
+            Ten mon
+            <input name="name" required>
+          </label>
+          <label>
+            Gia
+            <input name="price" type="number" min="1000" step="1000" required>
+          </label>
+          <label>
+            Danh muc
+            <select name="category_id" required></select>
+          </label>
+          <label>
+            Link anh
+            <input name="image" placeholder="https://...">
+          </label>
+          <label>
+            Trang thai
+            <select name="status">
+              <option value="active">Hien</option>
+              <option value="inactive">An</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button type="submit">Luu mon</button>
+            <button class="secondary" type="button" id="resetProductForm">Lam moi</button>
+          </div>
+          <p id="productMessage" class="message"></p>
+        </form>
+
+        <div style="height:18px"></div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Mon</th>
+              <th>Gia</th>
+              <th>Danh muc</th>
+              <th>Trang thai</th>
+              <th>Thao tac</th>
+            </tr>
+          </thead>
+          <tbody id="productsTable"></tbody>
+        </table>
+      </section>
+
+      <section id="ordersTab" hidden>
+        <div class="section-header">
+          <div>
+            <h1>Don hang moi</h1>
+            <p class="muted">Admin xac nhan don pending de day sang bep KDS.</p>
+          </div>
+          <button type="button" id="refreshOrders">Tai lai</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Ma don</th>
+              <th>Khach hang</th>
+              <th>Mon an</th>
+              <th>Tong tien</th>
+              <th>Trang thai</th>
+              <th>Thao tac</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTable"></tbody>
+        </table>
+      </section>
+    </section>
+  </main>
+
+  <script src="admin-script.js"></script>
+</body>
+</html>
