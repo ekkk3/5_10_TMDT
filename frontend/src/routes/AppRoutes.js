@@ -12,6 +12,8 @@ import { KitchenKDSPage, mountKitchenKDSPage } from '../features/kitchen-kds/Kit
 import { RegisterPage, mountRegisterPage } from '../features/auth/RegisterPage.js';
 import { LoginPage, mountLoginPage } from '../features/auth/LoginPage.js';
 import { AccountPage, mountAccountPage } from '../features/auth/AccountPage.js';
+import { AdminLoginPage, mountAdminLoginPage } from '../features/admin-auth/AdminLoginPage.js';
+import { AdminDashboardPage, mountAdminDashboardPage } from '../features/admin-auth/AdminDashboardPage.js';
 
 
 const PlaceholderPage = (title) => `
@@ -54,19 +56,20 @@ const routes = {
     afterRender: mountAccountPage
   },
   '/forgot-password': () => AuthLayout(PlaceholderPage('Khoi phuc mat khau')),
-  '/admin': () => AdminLayout(`
-    <section class="placeholder-page">
-      <h1>Quan tri</h1>
-      <p>Mo man hinh xu ly don hang de xac nhan, huy va theo doi don moi.</p>
-      <a class="button button-primary" href="#/admin/orders">Quan ly don hang</a>
-    </section>
-  `),
+  '/admin/login': {
+    render: () => AuthLayout(AdminLoginPage()),
+    afterRender: mountAdminLoginPage
+  },
+  '/admin': {
+    render: () => AdminLayout(AdminDashboardPage()),
+    afterRender: mountAdminDashboardPage
+  },
   '/admin/orders': {
-    render: () => AdminLayout(AdminOrderListPage()),
+    render: () => AdminLayout(AdminOrderListPage(), { requiredPermission: 'ORDER_MANAGE' }),
     afterRender: mountAdminOrderListPage
   },
   '/kitchen': {
-    render: () => AdminLayout(KitchenKDSPage()),
+    render: () => AdminLayout(KitchenKDSPage(), { requiredPermission: 'KITCHEN_KDS' }),
     afterRender: mountKitchenKDSPage
   }
 };
