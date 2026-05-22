@@ -1,9 +1,10 @@
 const pool = require('../../config/database');
+const { ORDER_STATUS_FLOW, ORDER_STATUSES, getOrderStatusLabel, isKnownOrderStatus } = require('../../common/orderStatus');
 const { generateOrderCode } = require('../../utils/generateOrderCode');
 const vouchersService = require('../vouchers/vouchers.service');
 
 const GUEST = 'GUEST';
-const PENDING = 'PENDING';
+const PENDING = ORDER_STATUSES.PENDING;
 const UNPAID = 'UNPAID';
 const PAID = 'PAID';
 const PAYMENT_METHODS = new Set(['COD', 'ONLINE_MOCK']);
@@ -25,6 +26,10 @@ const normalizeText = (value) => String(value || '').trim();
 const normalizePhone = (value) => normalizeText(value).replace(/[\s.-]/g, '');
 
 const isValidPhone = (value) => /^(0\d{9}|\+84\d{9})$/.test(normalizePhone(value));
+
+const normalizeOrderCode = (value) => normalizeText(value).toUpperCase();
+
+const isValidOrderCode = (value) => /^[A-Z0-9-]{4,30}$/.test(normalizeOrderCode(value));
 
 const normalizeSearchText = (value) =>
   normalizeText(value)
@@ -208,6 +213,197 @@ const getUniqueOrderCode = async (connection) => {
   }
 
   throw new Error('Khong the tao ma don hang duy nhat');
+};
+
+const mapStatusLog = (log, currentStatus) => ({
+  status: log.new_status,
+  label: getOrderStatusLabel(log.new_status),
+  note: log.note,
+  updated_at: log.created_at,
+  is_current: log.new_status === currentStatus
+});
+
+const buildFallbackStatusHistory = (order) => {
+  const status = order.order_status;
+  const updatedAt = order.updated_at || order.created_at;
+
+  if (status === ORDER_STATUSES.CANCELLED) {
+    return [
+      {
+        status,
+        label: getOrderStatusLabel(status),
+        note: null,
+        updated_at: updatedAt,
+        is_current: true
+      }
+    ];
+  }
+
+  const currentIndex = ORDER_STATUS_FLOW.indexOf(status);
+  const fallbackFlow = currentIndex >= 0 ? ORDER_STATUS_FLOW.slice(0, currentIndex + 1) : [status];
+
+  return fallbackFlow.map((entryStatus) => ({
+    status: entryStatus,
+    label: getOrderStatusLabel(entryStatus),
+    note: null,
+    updated_at: entryStatus === status ? updatedAt : null,
+    is_current: entryStatus === status
+  }));
+};
+
+const buildTrackingErrors = ({ orderCode, phone }) => {
+  const errors = {};
+
+  if (!orderCode) {
+    errors.orderCode = 'Vui lòng nhập mã đơn';
+  } else if (!isValidOrderCode(orderCode)) {
+    errors.orderCode = 'Mã đơn không đúng định dạng';
+  }
+
+  if (!phone) {
+    errors.phone = 'Vui lòng nhập số điện thoại';
+  } else if (!isValidPhone(phone)) {
+    errors.phone = 'Số điện thoại không đúng định dạng';
+  }
+
+  return errors;
+};
+
+const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
+  const normalizedOrderCode = normalizeOrderCode(orderCode);
+  const normalizedPhone = normalizePhone(phone);
+  const errors = buildTrackingErrors({ orderCode: normalizedOrderCode, phone: normalizedPhone });
+
+  if (Object.keys(errors).length) {
+    return buildError(400, 'Thông tin tra cứu không hợp lệ', errors);
+  }
+
+  const [orders] = await pool.query(
+    `
+      SELECT
+        order_id,
+        order_code,
+        guest_name,
+        guest_phone,
+        total_amount,
+        order_status,
+        payment_status,
+        created_at,
+        updated_at
+      FROM orders
+      WHERE order_code = ? AND customer_type = ?
+      LIMIT 1
+    `,
+    [normalizedOrderCode, GUEST]
+  );
+
+  if (!orders.length) {
+    return buildError(404, 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hoặc số điện thoại.');
+  }
+
+  const order = orders[0];
+
+  if (normalizePhone(order.guest_phone) !== normalizedPhone) {
+    return buildError(403, 'Số điện thoại không khớp với đơn hàng. Hệ thống từ chối hiển thị chi tiết đơn.');
+  }
+
+  const [items] = await pool.query(
+    `
+      SELECT
+        order_item_id,
+        food_name_snapshot,
+        quantity,
+        unit_price,
+        total_price,
+        note
+      FROM order_items
+      WHERE order_id = ?
+      ORDER BY order_item_id ASC
+    `,
+    [order.order_id]
+  );
+
+  const itemIds = items.map((item) => item.order_item_id);
+  const optionsByItemId = new Map();
+
+  if (itemIds.length) {
+    const [options] = await pool.query(
+      `
+        SELECT
+          order_item_id,
+          option_name_snapshot,
+          quantity,
+          extra_price
+        FROM order_item_options
+        WHERE order_item_id IN (?)
+        ORDER BY order_item_option_id ASC
+      `,
+      [itemIds]
+    );
+
+    options.forEach((option) => {
+      const optionsForItem = optionsByItemId.get(option.order_item_id) || [];
+      optionsForItem.push({
+        option_name: option.option_name_snapshot,
+        quantity: Number(option.quantity || 0),
+        extra_price: Number(option.extra_price || 0)
+      });
+      optionsByItemId.set(option.order_item_id, optionsForItem);
+    });
+  }
+
+  const [statusLogs] = await pool.query(
+    `
+      SELECT new_status, note, created_at
+      FROM order_status_logs
+      WHERE order_id = ?
+      ORDER BY created_at ASC, log_id ASC
+    `,
+    [order.order_id]
+  );
+
+  const statusHistory = statusLogs.length
+    ? statusLogs.map((log) => mapStatusLog(log, order.order_status))
+    : buildFallbackStatusHistory(order);
+
+  const statusUpdateTimes = statusHistory.map((entry) => entry.updated_at).filter(Boolean);
+  const latestStatusAt = statusUpdateTimes[statusUpdateTimes.length - 1] || order.updated_at || order.created_at;
+
+  const cancelLog = [...statusLogs].reverse().find((log) => log.new_status === ORDER_STATUSES.CANCELLED && log.note);
+  const cancelReason = order.order_status === ORDER_STATUSES.CANCELLED ? cancelLog?.note || null : null;
+
+  if (!isKnownOrderStatus(order.order_status)) {
+    statusHistory.push({
+      status: order.order_status,
+      label: order.order_status,
+      note: null,
+      updated_at: order.updated_at || order.created_at,
+      is_current: true
+    });
+  }
+
+  return {
+    ok: true,
+    data: {
+      order_code: order.order_code,
+      guest_name: order.guest_name,
+      guest_phone: order.guest_phone,
+      order_status: order.order_status,
+      payment_status: order.payment_status,
+      total_amount: Number(order.total_amount || 0),
+      items: items.map((item) => ({
+        food_name: item.food_name_snapshot,
+        quantity: Number(item.quantity || 0),
+        unit_price: Number(item.unit_price || 0),
+        total_price: Number(item.total_price || 0),
+        note: item.note,
+        options: optionsByItemId.get(item.order_item_id) || []
+      })),
+      status_history: statusHistory,
+      cancel_reason: cancelReason,
+      updated_at: latestStatusAt
+    }
+  };
 };
 
 const resolveVoucherDiscount = async ({ appliedVoucher, requestedDiscount, subtotal }) => {
@@ -400,5 +596,6 @@ const createGuestOrder = async (payload = {}) => {
 };
 
 module.exports = {
-  createGuestOrder
+  createGuestOrder,
+  getGuestOrderTracking
 };
