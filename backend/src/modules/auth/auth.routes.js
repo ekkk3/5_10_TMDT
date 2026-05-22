@@ -1,0 +1,15 @@
+const express = require('express');
+const authController = require('./auth.controller');
+
+const router = express.Router();
+
+router.post('/login', authController.login);
+router.post('/login/request-otp', authController.requestLoginOtp);
+router.post('/login/verify-otp', authController.verifyLoginOtp);
+router.post('/logout', authController.logout);
+router.get('/me', authController.getCurrentUser);
+router.post('/register', authController.requestRegistration);
+router.post('/register/resend-otp', authController.resendRegistrationOtp);
+router.post('/register/verify', authController.verifyRegistration);
+
+module.exports = router;
