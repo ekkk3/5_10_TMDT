@@ -54,3 +54,45 @@ function saveCart() {
     localStorage.setItem('userCart', JSON.stringify(cart));
     // Nếu có hàm renderCart() thì gọi ở đây để cập nhật UI
 }
+
+// Xử lý submit form checkout
+const checkoutForm = document.getElementById('checkout-form');
+if (checkoutForm) {
+    checkoutForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        if (cart.length === 0) {
+            alert('Giỏ hàng trống!');
+            return;
+        }
+
+        const total_price = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        const orderData = {
+            customer_name: document.getElementById('customer_name').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value,
+            cartItems: cart,
+            total_price: total_price
+        };
+
+        try {
+            const response = await fetch('http://localhost:3000/api/user/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                alert('Đặt hàng thành công! Mã đơn: ' + result.orderId);
+                localStorage.removeItem('userCart'); // Xóa giỏ hàng
+                window.location.href = 'index.html'; // Trở về trang chủ
+            } else {
+                alert('Lỗi: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Lỗi khi đặt hàng:', error);
+        }
+    });
+}
