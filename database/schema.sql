@@ -1,5 +1,6 @@
 -- Tạo cơ sở dữ liệu
-CREATE DATABASE IF NOT EXISTS fast_food_system;
+DROP DATABASE IF EXISTS fast_food_system;
+CREATE DATABASE fast_food_system;
 USE fast_food_system;
 
 -- 1. Bảng roles [cite: 2, 3, 4]
