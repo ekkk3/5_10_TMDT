@@ -1,4 +1,5 @@
 import { apiService } from './api.service.js';
+import { adminAuthService } from './adminAuthService.js';
 
 export const kitchenService = {
   getPendingOrders: async ({ includeCancelled = true } = {}) => {
@@ -8,7 +9,7 @@ export const kitchenService = {
       query.set('includeCancelled', 'true');
     }
 
-    const response = await apiService.get(`/kitchen/orders${query.toString() ? `?${query.toString()}` : ''}`);
+    const response = await apiService.get(`/kitchen/orders${query.toString() ? `?${query.toString()}` : ''}`, adminAuthService.getAuthorizationOptions());
     return response.data;
   },
 
@@ -23,7 +24,7 @@ export const kitchenService = {
       throw new Error('Trang thai KDS khong hop le');
     }
 
-    const response = await apiService.patch(`/kitchen/orders/${encodeURIComponent(orderId)}/${endpoint}`);
+    const response = await apiService.patch(`/kitchen/orders/${encodeURIComponent(orderId)}/${endpoint}`, {}, adminAuthService.getAuthorizationOptions());
     return response.data;
   }
 };

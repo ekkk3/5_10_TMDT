@@ -23,7 +23,21 @@ const getGuestOrderTracking = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Tra cứu đơn hàng thành công', result.data);
+    return successResponse(res, 'Tra cuu don hang thanh cong', result.data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const cancelGuestOrder = async (req, res, next) => {
+  try {
+    const result = await ordersService.cancelGuestOrder(req.params.orderCode, req.body);
+
+    if (!result.ok) {
+      return errorResponse(res, result.message, result.statusCode, result.errors || null);
+    }
+
+    return successResponse(res, 'Huy don hang vang lai thanh cong', result.data);
   } catch (error) {
     return next(error);
   }
@@ -31,5 +45,6 @@ const getGuestOrderTracking = async (req, res, next) => {
 
 module.exports = {
   createGuestOrder,
-  getGuestOrderTracking
+  getGuestOrderTracking,
+  cancelGuestOrder
 };

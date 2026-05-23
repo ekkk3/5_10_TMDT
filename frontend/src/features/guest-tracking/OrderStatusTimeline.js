@@ -1,11 +1,11 @@
 const ORDER_STATUS_LABELS = {
-  PENDING: 'Chờ duyệt',
-  CONFIRMED: 'Đã xác nhận',
-  COOKING: 'Đang nấu',
-  READY: 'Chờ giao',
-  DELIVERING: 'Đang giao',
-  COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy'
+  PENDING: 'Cho duyet',
+  CONFIRMED: 'Da xac nhan',
+  COOKING: 'Dang nau',
+  READY: 'Cho giao',
+  DELIVERING: 'Dang giao',
+  COMPLETED: 'Hoan thanh',
+  CANCELLED: 'Da huy'
 };
 
 const ORDER_STATUS_FLOW = ['PENDING', 'CONFIRMED', 'COOKING', 'READY', 'DELIVERING', 'COMPLETED'];

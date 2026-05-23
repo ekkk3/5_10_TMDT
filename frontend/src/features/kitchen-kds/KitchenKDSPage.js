@@ -136,7 +136,7 @@ const renderOrderCard = (order, { isUpdating = false } = {}) => {
       <div class="kds-actions">
         ${
           canStart
-            ? `<button class="kds-action start" type="button" data-mark-cooking="${order.order_id}" ${isUpdating ? 'disabled' : ''}>Bat dau nau</button>`
+            ? `<button class="kds-action start" type="button" data-mark-cooking="${order.order_id}" ${isUpdating ? 'disabled' : ''}>Nhan mon / Bat dau nau</button>`
             : ''
         }
         ${
@@ -162,7 +162,7 @@ const renderPageBody = ({ orders = [], readyOrders = [], summary = {}, isLoading
     <div class="kds-header">
       <div>
         <h1>KDS bep</h1>
-        <p>Theo doi don da duoc admin xac nhan, cap nhat Dang nau va Cho giao de timeline cua admin/khach hang dong bo.</p>
+        <p>Theo doi ticket bep theo thu tu thoi gian, nhan mon, cap nhat Dang nau va Hoan thanh de dong bo timeline cho admin/khach hang.</p>
       </div>
       <div class="kds-toolbar">
         <div class="kds-stat">${summary.confirmed || 0} <span>cho nau</span></div>

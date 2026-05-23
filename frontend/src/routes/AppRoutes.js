@@ -8,7 +8,14 @@ import { GuestCheckoutPage, mountGuestCheckoutPage } from '../features/guest-ord
 import { GuestOrderResultPage } from '../features/guest-order/GuestOrderResultPage.js';
 import { GuestTrackingPage, mountGuestTrackingPage } from '../features/guest-tracking/GuestTrackingPage.js';
 import { AdminOrderListPage, mountAdminOrderListPage } from '../features/admin-orders/AdminOrderListPage.js';
+import { AdminUserListPage, mountAdminUserListPage } from '../features/admin-users/AdminUserListPage.js';
 import { KitchenKDSPage, mountKitchenKDSPage } from '../features/kitchen-kds/KitchenKDSPage.js';
+import { RegisterPage, mountRegisterPage } from '../features/auth/RegisterPage.js';
+import { LoginPage, mountLoginPage } from '../features/auth/LoginPage.js';
+import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage.js';
+import { AccountPage, mountAccountPage } from '../features/auth/AccountPage.js';
+import { AdminLoginPage, mountAdminLoginPage } from '../features/admin-auth/AdminLoginPage.js';
+import { AdminDashboardPage, mountAdminDashboardPage } from '../features/admin-auth/AdminDashboardPage.js';
 
 
 const PlaceholderPage = (title) => `
@@ -38,20 +45,37 @@ const routes = {
     render: () => CustomerLayout(GuestTrackingPage()),
     afterRender: mountGuestTrackingPage
   },
-  '/login': () => AuthLayout(PlaceholderPage('Dang nhap')),
-  '/admin': () => AdminLayout(`
-    <section class="placeholder-page">
-      <h1>Quan tri</h1>
-      <p>Mo man hinh xu ly don hang de xac nhan, huy va theo doi don moi.</p>
-      <a class="button button-primary" href="#/admin/orders">Quan ly don hang</a>
-    </section>
-  `),
+  '/login': {
+    render: () => AuthLayout(LoginPage()),
+    afterRender: mountLoginPage
+  },
+  '/register': {
+    render: () => AuthLayout(RegisterPage()),
+    afterRender: mountRegisterPage
+  },
+  '/account': {
+    render: () => CustomerLayout(AccountPage()),
+    afterRender: mountAccountPage
+  },
+  '/forgot-password': () => AuthLayout(ForgotPasswordPage()),
+  '/admin/login': {
+    render: () => AuthLayout(AdminLoginPage()),
+    afterRender: mountAdminLoginPage
+  },
+  '/admin': {
+    render: () => AdminLayout(AdminDashboardPage()),
+    afterRender: mountAdminDashboardPage
+  },
   '/admin/orders': {
-    render: () => AdminLayout(AdminOrderListPage()),
+    render: () => AdminLayout(AdminOrderListPage(), { requiredPermission: 'ORDER_MANAGE' }),
     afterRender: mountAdminOrderListPage
   },
+  '/admin/users': {
+    render: () => AdminLayout(AdminUserListPage(), { requiredPermission: 'USER_MANAGE' }),
+    afterRender: mountAdminUserListPage
+  },
   '/kitchen': {
-    render: () => AdminLayout(KitchenKDSPage()),
+    render: () => AdminLayout(KitchenKDSPage(), { requiredPermission: 'KITCHEN_KDS' }),
     afterRender: mountKitchenKDSPage
   }
 };

@@ -3,15 +3,23 @@ USE fast_food_system;
 INSERT INTO roles (role_name, description) VALUES
   ('CUSTOMER', 'Khach hang'),
   ('ADMIN', 'Quan tri vien'),
-  ('KITCHEN', 'Nhan vien bep')
+  ('MANAGER', 'Quan ly van hanh'),
+  ('KITCHEN', 'Nhan vien bep'),
+  ('CSKH', 'Nhan vien cham soc khach hang'),
+  ('MARKETING', 'Nhan vien marketing'),
+  ('DELIVERY', 'Nhan vien dieu phoi giao hang')
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
 INSERT INTO users (role_id, full_name, email, phone, password_hash, status) VALUES
-  ((SELECT role_id FROM roles WHERE role_name = 'ADMIN'), 'System Admin', 'admin@fastfood.local', '0900000001', '$2a$10$exampleAdminPasswordHash', 'ACTIVE'),
-  ((SELECT role_id FROM roles WHERE role_name = 'CUSTOMER'), 'Nguyen Van Khach', 'customer@fastfood.local', '0900000002', '$2a$10$exampleCustomerPasswordHash', 'ACTIVE')
+  ((SELECT role_id FROM roles WHERE role_name = 'ADMIN'), 'System Admin', 'admin@fastfood.local', '0900000001', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'KITCHEN'), 'Kitchen Staff', 'kitchen@fastfood.local', '0900000003', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'CSKH'), 'CSKH Staff', 'cskh@fastfood.local', '0900000004', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'MARKETING'), 'Marketing Staff', 'marketing@fastfood.local', '0900000005', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'CUSTOMER'), 'Nguyen Van Khach', 'customer@fastfood.local', '0900000002', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE')
 ON DUPLICATE KEY UPDATE
   role_id = VALUES(role_id),
   full_name = VALUES(full_name),
+  password_hash = VALUES(password_hash),
   phone = VALUES(phone),
   status = VALUES(status);
 
@@ -139,4 +147,99 @@ WHERE users.email = 'customer@fastfood.local'
     SELECT 1 FROM user_vouchers
     WHERE user_vouchers.user_id = users.user_id
       AND user_vouchers.voucher_id = vouchers.voucher_id
+  );
+
+INSERT INTO inventory (food_id, quantity, is_unlimited)
+SELECT food_id, 40, FALSE
+FROM foods
+WHERE food_name IN ('Classic Beef Burger', 'Crispy Chicken Burger', 'Ga Ran 2 Mieng', 'Khoai Tay Chien')
+  AND NOT EXISTS (
+    SELECT 1 FROM inventory WHERE inventory.food_id = foods.food_id
+  );
+
+INSERT INTO inventory (food_id, quantity, is_unlimited)
+SELECT food_id, 0, FALSE
+FROM foods
+WHERE food_name = 'Tra Dao Cam Sa'
+  AND NOT EXISTS (
+    SELECT 1 FROM inventory WHERE inventory.food_id = foods.food_id
+  );
+
+INSERT INTO orders (
+  order_code,
+  user_id,
+  customer_type,
+  delivery_address,
+  subtotal,
+  delivery_fee,
+  discount_amount,
+  total_amount,
+  order_status,
+  payment_status,
+  payment_method,
+  note
+)
+SELECT
+  'SEED-REVIEW-001',
+  users.user_id,
+  'MEMBER',
+  '12 Nguyen Hue, Quan 1, TP HCM',
+  138000,
+  15000,
+  0,
+  153000,
+  'COMPLETED',
+  'PAID',
+  'COD',
+  'Don mau tao review menu'
+FROM users
+WHERE users.email = 'customer@fastfood.local'
+  AND NOT EXISTS (SELECT 1 FROM orders WHERE order_code = 'SEED-REVIEW-001');
+
+INSERT INTO order_items (order_id, food_id, food_name_snapshot, quantity, unit_price, total_price, note, kitchen_status)
+SELECT orders.order_id, foods.food_id, foods.food_name, 1, foods.price, foods.price, NULL, 'DONE'
+FROM orders
+JOIN foods ON foods.food_name = 'Classic Beef Burger'
+WHERE orders.order_code = 'SEED-REVIEW-001'
+  AND NOT EXISTS (
+    SELECT 1 FROM order_items
+    WHERE order_items.order_id = orders.order_id
+      AND order_items.food_id = foods.food_id
+  );
+
+INSERT INTO order_items (order_id, food_id, food_name_snapshot, quantity, unit_price, total_price, note, kitchen_status)
+SELECT orders.order_id, foods.food_id, foods.food_name, 1, foods.price, foods.price, NULL, 'DONE'
+FROM orders
+JOIN foods ON foods.food_name = 'Ga Ran 2 Mieng'
+WHERE orders.order_code = 'SEED-REVIEW-001'
+  AND NOT EXISTS (
+    SELECT 1 FROM order_items
+    WHERE order_items.order_id = orders.order_id
+      AND order_items.food_id = foods.food_id
+  );
+
+INSERT INTO reviews (user_id, order_id, food_id, rating, comment, status)
+SELECT users.user_id, orders.order_id, foods.food_id, 5, 'Burger ngon, giao nhanh, phan sot vua mieng.', 'APPROVED'
+FROM users
+JOIN orders ON orders.order_code = 'SEED-REVIEW-001'
+JOIN foods ON foods.food_name = 'Classic Beef Burger'
+WHERE users.email = 'customer@fastfood.local'
+  AND NOT EXISTS (
+    SELECT 1 FROM reviews
+    WHERE reviews.user_id = users.user_id
+      AND reviews.order_id = orders.order_id
+      AND reviews.food_id = foods.food_id
+  );
+
+INSERT INTO reviews (user_id, order_id, food_id, rating, comment, status)
+SELECT users.user_id, orders.order_id, foods.food_id, 4, 'Ga ran gion, con nong khi nhan hang.', 'APPROVED'
+FROM users
+JOIN orders ON orders.order_code = 'SEED-REVIEW-001'
+JOIN foods ON foods.food_name = 'Ga Ran 2 Mieng'
+WHERE users.email = 'customer@fastfood.local'
+  AND NOT EXISTS (
+    SELECT 1 FROM reviews
+    WHERE reviews.user_id = users.user_id
+      AND reviews.order_id = orders.order_id
+      AND reviews.food_id = foods.food_id
   );

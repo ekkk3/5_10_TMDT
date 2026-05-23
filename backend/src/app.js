@@ -9,7 +9,9 @@ const foodOptionsRoutes = require('./modules/food-options/food-options.routes');
 const voucherRoutes = require('./modules/vouchers/vouchers.routes');
 const orderRoutes = require('./modules/orders/orders.routes');
 const adminOrderRoutes = require('./modules/admin-orders/admin-orders.routes');
+const adminUserRoutes = require('./modules/admin-users/admin-users.routes');
 const kitchenRoutes = require('./modules/kitchen/kitchen.routes');
+const authRoutes = require('./modules/auth/auth.routes');
 const { notFoundHandler } = require('./middlewares/not-found.middleware');
 const { errorHandler } = require('./middlewares/error-handler.middleware');
 
@@ -28,7 +30,9 @@ app.use('/api/food-options', foodOptionsRoutes);
 app.use('/api/vouchers', voucherRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin/orders', adminOrderRoutes);
+app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/kitchen', kitchenRoutes);
+app.use('/api/auth', authRoutes);
 
 
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend', 'src')));
@@ -38,7 +42,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'src', 'index.html'));
 });
 
-app.get(['/menu', '/cart', '/checkout', '/guest-order/result', '/orders/search', '/login', '/admin', '/admin/orders', '/kitchen'], (req, res) => {
+app.get(['/menu', '/cart', '/checkout', '/guest-order/result', '/orders/search', '/login', '/register', '/account', '/forgot-password', '/admin/login', '/admin', '/admin/orders', '/admin/users', '/kitchen'], (req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'src', 'index.html'));
 });
 

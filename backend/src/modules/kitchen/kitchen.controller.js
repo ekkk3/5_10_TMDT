@@ -17,7 +17,7 @@ const getPendingOrders = async (req, res, next) => {
 
 const markCooking = async (req, res, next) => {
   try {
-    const result = await kitchenService.markCooking(req.params.id);
+    const result = await kitchenService.markCooking(req.params.id, req.user || null);
 
     if (!result.ok) {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
@@ -31,7 +31,7 @@ const markCooking = async (req, res, next) => {
 
 const markReady = async (req, res, next) => {
   try {
-    const result = await kitchenService.markReady(req.params.id);
+    const result = await kitchenService.markReady(req.params.id, req.user || null);
 
     if (!result.ok) {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);

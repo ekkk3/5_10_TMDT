@@ -5,8 +5,8 @@ const vouchersService = require('../vouchers/vouchers.service');
 
 const GUEST = 'GUEST';
 const PENDING = ORDER_STATUSES.PENDING;
-const UNPAID = 'UNPAID';
 const PAID = 'PAID';
+const COD = 'COD';
 const PAYMENT_METHODS = new Set(['COD', 'ONLINE_MOCK']);
 
 const buildError = (statusCode, message, errors = null) => ({
@@ -136,6 +136,26 @@ const loadAndValidateItems = async (items = []) => {
     }
   });
 
+  if (!Object.keys(errors).length) {
+    const [inventoryRows] = await pool.query(
+      `
+        SELECT food_id, quantity, is_unlimited
+        FROM inventory
+        WHERE food_id IN (?)
+      `,
+      [foodIds]
+    );
+
+    const inventoryMap = new Map(inventoryRows.map((row) => [Number(row.food_id), row]));
+    normalizedItems.forEach((item) => {
+      const inventory = inventoryMap.get(item.food_id);
+
+      if (inventory && !Boolean(inventory.is_unlimited) && Number(inventory.quantity || 0) < item.quantity) {
+        errors[`items.${item.index}.quantity`] = 'Mon an tam het hang hoac khong du so luong';
+      }
+    });
+  }
+
   const optionIds = [
     ...new Set(
       normalizedItems.flatMap((item) =>
@@ -251,19 +271,44 @@ const buildFallbackStatusHistory = (order) => {
   }));
 };
 
+const buildTrackingStatusHistory = (order, statusLogs = []) => {
+  const fallbackHistory = buildFallbackStatusHistory(order);
+
+  if (!statusLogs.length) {
+    return fallbackHistory;
+  }
+
+  const historyByStatus = new Map(fallbackHistory.map((entry) => [entry.status, entry]));
+
+  statusLogs.forEach((log) => {
+    historyByStatus.set(log.new_status, mapStatusLog(log, order.order_status));
+  });
+
+  if (order.order_status === ORDER_STATUSES.CANCELLED) {
+    const pending = historyByStatus.get(ORDER_STATUSES.PENDING);
+    const cancelled = historyByStatus.get(ORDER_STATUSES.CANCELLED);
+    return [pending, cancelled].filter(Boolean);
+  }
+
+  return ORDER_STATUS_FLOW.filter((status) => historyByStatus.has(status)).map((status) => ({
+    ...historyByStatus.get(status),
+    is_current: status === order.order_status
+  }));
+};
+
 const buildTrackingErrors = ({ orderCode, phone }) => {
   const errors = {};
 
   if (!orderCode) {
-    errors.orderCode = 'Vui lòng nhập mã đơn';
+    errors.orderCode = 'Vui long nhap ma don';
   } else if (!isValidOrderCode(orderCode)) {
-    errors.orderCode = 'Mã đơn không đúng định dạng';
+    errors.orderCode = 'Ma don khong dung dinh dang';
   }
 
   if (!phone) {
-    errors.phone = 'Vui lòng nhập số điện thoại';
+    errors.phone = 'Vui long nhap so dien thoai';
   } else if (!isValidPhone(phone)) {
-    errors.phone = 'Số điện thoại không đúng định dạng';
+    errors.phone = 'So dien thoai khong dung dinh dang';
   }
 
   return errors;
@@ -275,7 +320,7 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
   const errors = buildTrackingErrors({ orderCode: normalizedOrderCode, phone: normalizedPhone });
 
   if (Object.keys(errors).length) {
-    return buildError(400, 'Thông tin tra cứu không hợp lệ', errors);
+    return buildError(400, 'Thong tin tra cuu khong hop le', errors);
   }
 
   const [orders] = await pool.query(
@@ -285,9 +330,15 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
         order_code,
         guest_name,
         guest_phone,
+        delivery_address,
+        subtotal,
+        delivery_fee,
+        discount_amount,
         total_amount,
         order_status,
         payment_status,
+        payment_method,
+        note,
         created_at,
         updated_at
       FROM orders
@@ -298,13 +349,13 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
   );
 
   if (!orders.length) {
-    return buildError(404, 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hoặc số điện thoại.');
+    return buildError(404, 'Khong tim thay don hang. Vui long kiem tra lai ma don hoac so dien thoai.');
   }
 
   const order = orders[0];
 
   if (normalizePhone(order.guest_phone) !== normalizedPhone) {
-    return buildError(403, 'Số điện thoại không khớp với đơn hàng. Hệ thống từ chối hiển thị chi tiết đơn.');
+    return buildError(403, 'So dien thoai khong khop voi don hang. He thong tu choi hien thi chi tiet don.');
   }
 
   const [items] = await pool.query(
@@ -362,9 +413,7 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
     [order.order_id]
   );
 
-  const statusHistory = statusLogs.length
-    ? statusLogs.map((log) => mapStatusLog(log, order.order_status))
-    : buildFallbackStatusHistory(order);
+  const statusHistory = buildTrackingStatusHistory(order, statusLogs);
 
   const statusUpdateTimes = statusHistory.map((entry) => entry.updated_at).filter(Boolean);
   const latestStatusAt = statusUpdateTimes[statusUpdateTimes.length - 1] || order.updated_at || order.created_at;
@@ -388,9 +437,15 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
       order_code: order.order_code,
       guest_name: order.guest_name,
       guest_phone: order.guest_phone,
+      delivery_address: order.delivery_address,
+      subtotal: Number(order.subtotal || 0),
+      delivery_fee: Number(order.delivery_fee || 0),
+      discount_amount: Number(order.discount_amount || 0),
       order_status: order.order_status,
       payment_status: order.payment_status,
+      payment_method: order.payment_method,
       total_amount: Number(order.total_amount || 0),
+      note: order.note,
       items: items.map((item) => ({
         food_name: item.food_name_snapshot,
         quantity: Number(item.quantity || 0),
@@ -477,7 +532,7 @@ const createGuestOrder = async (payload = {}) => {
 
   const deliveryFee = Math.round(Number(deliveryArea.delivery_fee || 0));
   const totalAmount = Math.max(0, subtotal - voucherResult.discountAmount + deliveryFee);
-  const paymentStatus = payload.payment_method === 'ONLINE_MOCK' ? PAID : UNPAID;
+  const paymentStatus = payload.payment_method === 'ONLINE_MOCK' ? PAID : COD;
   const connection = await pool.getConnection();
 
   try {
@@ -569,6 +624,30 @@ const createGuestOrder = async (payload = {}) => {
 
     await connection.query(
       `
+        INSERT INTO payments (
+          order_id,
+          payment_method,
+          provider,
+          transaction_code,
+          amount,
+          payment_status,
+          paid_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        orderId,
+        payload.payment_method === 'ONLINE_MOCK' ? 'ONLINE' : 'COD',
+        payload.payment_method === 'ONLINE_MOCK' ? 'ONLINE_MOCK' : null,
+        payload.payment_method === 'ONLINE_MOCK' ? `MOCK-${orderCode}` : null,
+        totalAmount,
+        payload.payment_method === 'ONLINE_MOCK' ? 'SUCCESS' : 'PENDING',
+        payload.payment_method === 'ONLINE_MOCK' ? new Date() : null
+      ]
+    );
+
+    await connection.query(
+      `
         INSERT INTO order_status_logs (order_id, old_status, new_status, changed_by, note)
         VALUES (?, NULL, ?, NULL, ?)
       `,
@@ -584,7 +663,165 @@ const createGuestOrder = async (payload = {}) => {
         order_code: orderCode,
         guest_phone: normalizePhone(payload.guest_phone),
         order_status: PENDING,
+        payment_method: payload.payment_method,
+        payment_status: paymentStatus,
         total_amount: totalAmount
+      }
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+};
+
+const createGuestNotification = async (connection, order, title, content) => {
+  const receiver = order.guest_phone || order.guest_email;
+
+  if (!receiver) {
+    return;
+  }
+
+  await connection.query(
+    `
+      INSERT INTO notifications (user_id, order_id, channel, receiver, title, content, send_status)
+      VALUES (NULL, ?, ?, ?, ?, ?, 'PENDING')
+    `,
+    [order.order_id, receiver.includes('@') ? 'EMAIL' : 'SMS', receiver, title, content]
+  );
+};
+
+const buildGuestCancelErrors = (orderCode, payload = {}) => {
+  const errors = {};
+  const normalizedOrderCode = normalizeOrderCode(orderCode);
+  const phone = normalizePhone(payload.phone || payload.guest_phone);
+  const cancelReason = normalizeText(payload.cancel_reason);
+
+  if (!normalizedOrderCode) {
+    errors.orderCode = 'Vui long nhap ma don';
+  } else if (!isValidOrderCode(normalizedOrderCode)) {
+    errors.orderCode = 'Ma don khong dung dinh dang';
+  }
+
+  if (!phone) {
+    errors.phone = 'Vui long nhap so dien thoai';
+  } else if (!isValidPhone(phone)) {
+    errors.phone = 'So dien thoai khong dung dinh dang';
+  }
+
+  if (!cancelReason) {
+    errors.cancel_reason = 'Vui long nhap ly do huy don';
+  }
+
+  return {
+    errors,
+    normalizedOrderCode,
+    phone,
+    cancelReason
+  };
+};
+
+const cancelGuestOrder = async (orderCode, payload = {}) => {
+  const { errors, normalizedOrderCode, phone, cancelReason } = buildGuestCancelErrors(orderCode, payload);
+
+  if (Object.keys(errors).length) {
+    return buildError(400, 'Thong tin huy don khong hop le', errors);
+  }
+
+  const connection = await pool.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [orders] = await connection.query(
+      `
+        SELECT *
+        FROM orders
+        WHERE order_code = ? AND customer_type = ?
+        LIMIT 1
+        FOR UPDATE
+      `,
+      [normalizedOrderCode, GUEST]
+    );
+
+    if (!orders.length) {
+      await connection.rollback();
+      return buildError(404, 'Khong tim thay don hang. Vui long kiem tra lai ma don hoac so dien thoai.');
+    }
+
+    const order = orders[0];
+
+    if (normalizePhone(order.guest_phone) !== phone) {
+      await connection.rollback();
+      return buildError(403, 'So dien thoai khong khop voi don hang. He thong tu choi thao tac huy.');
+    }
+
+    if (order.order_status === ORDER_STATUSES.CANCELLED) {
+      await connection.rollback();
+      return buildError(409, 'Don hang da duoc huy truoc do', { order_status: order.order_status });
+    }
+
+    if (order.order_status !== ORDER_STATUSES.PENDING) {
+      await connection.rollback();
+      return buildError(409, 'Chi co the tu huy don khi don dang o trang thai PENDING', {
+        order_status: order.order_status
+      });
+    }
+
+    const nextPaymentStatus = order.payment_status === PAID ? 'REFUNDED' : order.payment_status;
+
+    await connection.query(
+      'UPDATE orders SET order_status = ?, payment_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?',
+      [ORDER_STATUSES.CANCELLED, nextPaymentStatus, order.order_id]
+    );
+
+    if (order.payment_status === PAID) {
+      await connection.query(
+        `
+          UPDATE payments
+          SET payment_status = 'REFUNDED'
+          WHERE order_id = ? AND payment_status = 'SUCCESS'
+        `,
+        [order.order_id]
+      );
+    } else {
+      await connection.query(
+        `
+          UPDATE payments
+          SET payment_status = 'CANCELLED'
+          WHERE order_id = ? AND payment_status = 'PENDING'
+        `,
+        [order.order_id]
+      );
+    }
+
+    await connection.query(
+      `
+        INSERT INTO order_status_logs (order_id, old_status, new_status, changed_by, note)
+        VALUES (?, ?, ?, NULL, ?)
+      `,
+      [order.order_id, order.order_status, ORDER_STATUSES.CANCELLED, cancelReason.slice(0, 255)]
+    );
+
+    await createGuestNotification(
+      connection,
+      order,
+      'Don hang da bi huy',
+      `Don hang ${order.order_code} da bi huy. Ly do: ${cancelReason.slice(0, 180)}`
+    );
+
+    await connection.commit();
+
+    return {
+      ok: true,
+      data: {
+        order_id: Number(order.order_id),
+        order_code: order.order_code,
+        guest_phone: order.guest_phone,
+        order_status: ORDER_STATUSES.CANCELLED,
+        payment_status: nextPaymentStatus,
+        cancel_reason: cancelReason
       }
     };
   } catch (error) {
@@ -597,5 +834,6 @@ const createGuestOrder = async (payload = {}) => {
 
 module.exports = {
   createGuestOrder,
-  getGuestOrderTracking
+  getGuestOrderTracking,
+  cancelGuestOrder
 };
