@@ -10,20 +10,7 @@ Seeder mau bo sung nam tai:
 
 `database/seeders/001_seed_sample_data.sql`
 
-File `database/schema.sql` duoc giu nguyen trong buoc setup nay.
-
-## Core Tables
-
-- `roles`
-- `users`
-- `addresses`
-- `categories`
-- `foods`
-- `food_options`
-- `vouchers`
-- `user_vouchers`
-- `orders`
-- `order_items`
+File `database/schema.sql` duoc giu nguyen trong buoc setup nay. Seeder `001_seed_sample_data.sql` co the duoc chinh sua de them du lieu mau khac neu can
 
 ## mat khau mac dinh:
 - admin@fastfood.local / Admin@123
