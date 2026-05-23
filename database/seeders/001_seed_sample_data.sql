@@ -3,15 +3,23 @@ USE fast_food_system;
 INSERT INTO roles (role_name, description) VALUES
   ('CUSTOMER', 'Khach hang'),
   ('ADMIN', 'Quan tri vien'),
-  ('KITCHEN', 'Nhan vien bep')
+  ('MANAGER', 'Quan ly van hanh'),
+  ('KITCHEN', 'Nhan vien bep'),
+  ('CSKH', 'Nhan vien cham soc khach hang'),
+  ('MARKETING', 'Nhan vien marketing'),
+  ('DELIVERY', 'Nhan vien dieu phoi giao hang')
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
 INSERT INTO users (role_id, full_name, email, phone, password_hash, status) VALUES
-  ((SELECT role_id FROM roles WHERE role_name = 'ADMIN'), 'System Admin', 'admin@fastfood.local', '0900000001', '$2a$10$exampleAdminPasswordHash', 'ACTIVE'),
-  ((SELECT role_id FROM roles WHERE role_name = 'CUSTOMER'), 'Nguyen Van Khach', 'customer@fastfood.local', '0900000002', '$2a$10$exampleCustomerPasswordHash', 'ACTIVE')
+  ((SELECT role_id FROM roles WHERE role_name = 'ADMIN'), 'System Admin', 'admin@fastfood.local', '0900000001', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'KITCHEN'), 'Kitchen Staff', 'kitchen@fastfood.local', '0900000003', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'CSKH'), 'CSKH Staff', 'cskh@fastfood.local', '0900000004', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'MARKETING'), 'Marketing Staff', 'marketing@fastfood.local', '0900000005', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'CUSTOMER'), 'Nguyen Van Khach', 'customer@fastfood.local', '0900000002', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE')
 ON DUPLICATE KEY UPDATE
   role_id = VALUES(role_id),
   full_name = VALUES(full_name),
+  password_hash = VALUES(password_hash),
   phone = VALUES(phone),
   status = VALUES(status);
 

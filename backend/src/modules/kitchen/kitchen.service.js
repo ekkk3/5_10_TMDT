@@ -240,7 +240,7 @@ const sendNotification = async (connection, order, nextStatus) => {
   }
 };
 
-const saveStatus = async ({ idOrCode, expectedStatus, nextStatus, kitchenStatus, logNote }) => {
+const saveStatus = async ({ idOrCode, expectedStatus, nextStatus, kitchenStatus, logNote, actor = null }) => {
   const connection = await pool.getConnection();
 
   try {
@@ -276,9 +276,9 @@ const saveStatus = async ({ idOrCode, expectedStatus, nextStatus, kitchenStatus,
     await connection.query(
       `
         INSERT INTO order_status_logs (order_id, old_status, new_status, changed_by, note)
-        VALUES (?, ?, ?, NULL, ?)
+        VALUES (?, ?, ?, ?, ?)
       `,
-      [order.order_id, order.order_status, nextStatus, logNote]
+      [order.order_id, order.order_status, nextStatus, actor?.user_id || null, logNote]
     );
 
     await sendNotification(connection, order, nextStatus);
@@ -302,22 +302,24 @@ const saveStatus = async ({ idOrCode, expectedStatus, nextStatus, kitchenStatus,
   }
 };
 
-const markCooking = async (idOrCode) =>
+const markCooking = async (idOrCode, actor = null) =>
   saveStatus({
     idOrCode,
     expectedStatus: ORDER_STATUSES.CONFIRMED,
     nextStatus: ORDER_STATUSES.COOKING,
     kitchenStatus: 'COOKING',
-    logNote: 'Kitchen started cooking'
+    logNote: 'Kitchen started cooking',
+    actor
   });
 
-const markReady = async (idOrCode) =>
+const markReady = async (idOrCode, actor = null) =>
   saveStatus({
     idOrCode,
     expectedStatus: ORDER_STATUSES.COOKING,
     nextStatus: ORDER_STATUSES.READY,
     kitchenStatus: 'DONE',
-    logNote: 'Kitchen completed order and moved it to ready for delivery'
+    logNote: 'Kitchen completed order and moved it to ready for delivery',
+    actor
   });
 
 module.exports = {

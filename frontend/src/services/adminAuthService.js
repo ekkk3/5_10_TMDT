@@ -83,6 +83,7 @@ export const adminAuthService = {
   },
 
   getCurrentSession,
+  getAuthorizationOptions: authorizationOptions,
 
   getCurrentAdmin: async () => {
     const options = authorizationOptions();

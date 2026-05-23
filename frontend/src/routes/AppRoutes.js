@@ -8,6 +8,7 @@ import { GuestCheckoutPage, mountGuestCheckoutPage } from '../features/guest-ord
 import { GuestOrderResultPage } from '../features/guest-order/GuestOrderResultPage.js';
 import { GuestTrackingPage, mountGuestTrackingPage } from '../features/guest-tracking/GuestTrackingPage.js';
 import { AdminOrderListPage, mountAdminOrderListPage } from '../features/admin-orders/AdminOrderListPage.js';
+import { AdminUserListPage, mountAdminUserListPage } from '../features/admin-users/AdminUserListPage.js';
 import { KitchenKDSPage, mountKitchenKDSPage } from '../features/kitchen-kds/KitchenKDSPage.js';
 import { RegisterPage, mountRegisterPage } from '../features/auth/RegisterPage.js';
 import { LoginPage, mountLoginPage } from '../features/auth/LoginPage.js';
@@ -68,6 +69,10 @@ const routes = {
   '/admin/orders': {
     render: () => AdminLayout(AdminOrderListPage(), { requiredPermission: 'ORDER_MANAGE' }),
     afterRender: mountAdminOrderListPage
+  },
+  '/admin/users': {
+    render: () => AdminLayout(AdminUserListPage(), { requiredPermission: 'USER_MANAGE' }),
+    afterRender: mountAdminUserListPage
   },
   '/kitchen': {
     render: () => AdminLayout(KitchenKDSPage(), { requiredPermission: 'KITCHEN_KDS' }),
