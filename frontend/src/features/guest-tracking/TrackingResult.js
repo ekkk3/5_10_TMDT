@@ -61,6 +61,7 @@ const renderItems = (items = []) => {
               <div>
                 <strong>${escapeHtml(item.food_name)}</strong>
                 <span>So luong: ${Number(item.quantity || 0)}</span>
+                <span>Don gia: ${formatMoney(item.unit_price)}</span>
                 ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ''}
                 ${renderOptions(item.options || [])}
               </div>
@@ -102,6 +103,36 @@ export const TrackingResult = (order) => {
         <div>
           <span>Cap nhat gan nhat</span>
           <strong>${escapeHtml(formatDateTime(order.updated_at))}</strong>
+        </div>
+      </div>
+
+      <div class="tracking-detail-grid">
+        <div>
+          <span>Dia chi giao hang</span>
+          <strong>${escapeHtml(order.delivery_address || 'Chua co dia chi')}</strong>
+        </div>
+        <div>
+          <span>Ghi chu don</span>
+          <strong>${escapeHtml(order.note || 'Khong co ghi chu')}</strong>
+        </div>
+      </div>
+
+      <div class="tracking-money">
+        <div>
+          <span>Tam tinh</span>
+          <strong>${formatMoney(order.subtotal)}</strong>
+        </div>
+        <div>
+          <span>Phi giao hang</span>
+          <strong>${formatMoney(order.delivery_fee)}</strong>
+        </div>
+        <div>
+          <span>Giam gia</span>
+          <strong>-${formatMoney(order.discount_amount)}</strong>
+        </div>
+        <div class="tracking-money__total">
+          <span>Tong thanh toan</span>
+          <strong>${formatMoney(order.total_amount)}</strong>
         </div>
       </div>
 

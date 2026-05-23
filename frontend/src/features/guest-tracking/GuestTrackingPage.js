@@ -82,6 +82,14 @@ const pageStyles = `
     .tracking-summary div { padding: 12px; border: 1px solid #ffe0aa; border-radius: 8px; background: #fffaf3; }
     .tracking-summary span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: 800; }
     .tracking-summary strong { overflow-wrap: anywhere; }
+    .tracking-detail-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+    .tracking-detail-grid div, .tracking-money { padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+    .tracking-detail-grid span, .tracking-money span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: 800; }
+    .tracking-detail-grid strong { line-height: 1.45; overflow-wrap: anywhere; }
+    .tracking-money { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .tracking-money div { min-width: 0; }
+    .tracking-money strong { color: var(--ink); white-space: nowrap; }
+    .tracking-money__total strong { color: var(--red); }
     .tracking-cancel { padding: 14px; border: 1px solid #f2b8b5; border-radius: 8px; background: #fff7f6; }
     .tracking-cancel p { margin: 6px 0 0; color: #9f1f18; line-height: 1.45; }
     .tracking-cancel-form-panel { display: grid; gap: 14px; padding: 18px; border: 1px solid #f2b8b5; border-radius: 8px; background: #fff7f6; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
@@ -107,14 +115,14 @@ const pageStyles = `
     .tracking-items__row > strong { white-space: nowrap; }
     .tracking-items__options { margin: 8px 0 0; padding-left: 18px; color: var(--muted); }
     @media (max-width: 900px) {
-      .tracking-form, .tracking-summary { grid-template-columns: 1fr 1fr; }
+      .tracking-form, .tracking-summary, .tracking-detail-grid, .tracking-money { grid-template-columns: 1fr 1fr; }
       .tracking-form__submit { grid-column: 1 / -1; }
       .tracking-cancel-form { grid-template-columns: 1fr; }
       .tracking-timeline { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 640px) {
       .tracking-header, .tracking-result__header { display: block; }
-      .tracking-form, .tracking-summary, .tracking-timeline { grid-template-columns: 1fr; }
+      .tracking-form, .tracking-summary, .tracking-detail-grid, .tracking-money, .tracking-timeline { grid-template-columns: 1fr; }
       .tracking-result__amount { display: block; margin-top: 10px; }
       .tracking-items__row { display: grid; }
     }
