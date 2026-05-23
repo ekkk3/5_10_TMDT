@@ -9,13 +9,13 @@ const ORDER_STATUSES = {
 };
 
 const ORDER_STATUS_LABELS = {
-  [ORDER_STATUSES.PENDING]: 'Chờ duyệt',
-  [ORDER_STATUSES.CONFIRMED]: 'Đã xác nhận',
-  [ORDER_STATUSES.COOKING]: 'Đang nấu',
-  [ORDER_STATUSES.READY]: 'Chờ giao',
-  [ORDER_STATUSES.DELIVERING]: 'Đang giao',
-  [ORDER_STATUSES.COMPLETED]: 'Hoàn thành',
-  [ORDER_STATUSES.CANCELLED]: 'Đã hủy'
+  [ORDER_STATUSES.PENDING]: 'Cho duyet',
+  [ORDER_STATUSES.CONFIRMED]: 'Da xac nhan',
+  [ORDER_STATUSES.COOKING]: 'Dang nau',
+  [ORDER_STATUSES.READY]: 'Cho giao',
+  [ORDER_STATUSES.DELIVERING]: 'Dang giao',
+  [ORDER_STATUSES.COMPLETED]: 'Hoan thanh',
+  [ORDER_STATUSES.CANCELLED]: 'Da huy'
 };
 
 const ORDER_STATUS_FLOW = [

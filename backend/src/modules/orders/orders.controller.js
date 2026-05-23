@@ -23,7 +23,7 @@ const getGuestOrderTracking = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Tra cứu đơn hàng thành công', result.data);
+    return successResponse(res, 'Tra cuu don hang thanh cong', result.data);
   } catch (error) {
     return next(error);
   }

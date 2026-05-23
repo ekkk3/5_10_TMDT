@@ -271,19 +271,44 @@ const buildFallbackStatusHistory = (order) => {
   }));
 };
 
+const buildTrackingStatusHistory = (order, statusLogs = []) => {
+  const fallbackHistory = buildFallbackStatusHistory(order);
+
+  if (!statusLogs.length) {
+    return fallbackHistory;
+  }
+
+  const historyByStatus = new Map(fallbackHistory.map((entry) => [entry.status, entry]));
+
+  statusLogs.forEach((log) => {
+    historyByStatus.set(log.new_status, mapStatusLog(log, order.order_status));
+  });
+
+  if (order.order_status === ORDER_STATUSES.CANCELLED) {
+    const pending = historyByStatus.get(ORDER_STATUSES.PENDING);
+    const cancelled = historyByStatus.get(ORDER_STATUSES.CANCELLED);
+    return [pending, cancelled].filter(Boolean);
+  }
+
+  return ORDER_STATUS_FLOW.filter((status) => historyByStatus.has(status)).map((status) => ({
+    ...historyByStatus.get(status),
+    is_current: status === order.order_status
+  }));
+};
+
 const buildTrackingErrors = ({ orderCode, phone }) => {
   const errors = {};
 
   if (!orderCode) {
-    errors.orderCode = 'Vui lòng nhập mã đơn';
+    errors.orderCode = 'Vui long nhap ma don';
   } else if (!isValidOrderCode(orderCode)) {
-    errors.orderCode = 'Mã đơn không đúng định dạng';
+    errors.orderCode = 'Ma don khong dung dinh dang';
   }
 
   if (!phone) {
-    errors.phone = 'Vui lòng nhập số điện thoại';
+    errors.phone = 'Vui long nhap so dien thoai';
   } else if (!isValidPhone(phone)) {
-    errors.phone = 'Số điện thoại không đúng định dạng';
+    errors.phone = 'So dien thoai khong dung dinh dang';
   }
 
   return errors;
@@ -295,7 +320,7 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
   const errors = buildTrackingErrors({ orderCode: normalizedOrderCode, phone: normalizedPhone });
 
   if (Object.keys(errors).length) {
-    return buildError(400, 'Thông tin tra cứu không hợp lệ', errors);
+    return buildError(400, 'Thong tin tra cuu khong hop le', errors);
   }
 
   const [orders] = await pool.query(
@@ -305,10 +330,15 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
         order_code,
         guest_name,
         guest_phone,
+        delivery_address,
+        subtotal,
+        delivery_fee,
+        discount_amount,
         total_amount,
         order_status,
         payment_status,
         payment_method,
+        note,
         created_at,
         updated_at
       FROM orders
@@ -319,13 +349,13 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
   );
 
   if (!orders.length) {
-    return buildError(404, 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hoặc số điện thoại.');
+    return buildError(404, 'Khong tim thay don hang. Vui long kiem tra lai ma don hoac so dien thoai.');
   }
 
   const order = orders[0];
 
   if (normalizePhone(order.guest_phone) !== normalizedPhone) {
-    return buildError(403, 'Số điện thoại không khớp với đơn hàng. Hệ thống từ chối hiển thị chi tiết đơn.');
+    return buildError(403, 'So dien thoai khong khop voi don hang. He thong tu choi hien thi chi tiet don.');
   }
 
   const [items] = await pool.query(
@@ -383,9 +413,7 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
     [order.order_id]
   );
 
-  const statusHistory = statusLogs.length
-    ? statusLogs.map((log) => mapStatusLog(log, order.order_status))
-    : buildFallbackStatusHistory(order);
+  const statusHistory = buildTrackingStatusHistory(order, statusLogs);
 
   const statusUpdateTimes = statusHistory.map((entry) => entry.updated_at).filter(Boolean);
   const latestStatusAt = statusUpdateTimes[statusUpdateTimes.length - 1] || order.updated_at || order.created_at;
@@ -409,10 +437,15 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
       order_code: order.order_code,
       guest_name: order.guest_name,
       guest_phone: order.guest_phone,
+      delivery_address: order.delivery_address,
+      subtotal: Number(order.subtotal || 0),
+      delivery_fee: Number(order.delivery_fee || 0),
+      discount_amount: Number(order.discount_amount || 0),
       order_status: order.order_status,
       payment_status: order.payment_status,
       payment_method: order.payment_method,
       total_amount: Number(order.total_amount || 0),
+      note: order.note,
       items: items.map((item) => ({
         food_name: item.food_name_snapshot,
         quantity: Number(item.quantity || 0),
