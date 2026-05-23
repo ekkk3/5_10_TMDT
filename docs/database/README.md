@@ -24,3 +24,9 @@ File `database/schema.sql` duoc giu nguyen trong buoc setup nay.
 - `user_vouchers`
 - `orders`
 - `order_items`
+
+## mat khau mac dinh:
+- admin@fastfood.local / Admin@123
+- kitchen@fastfood.local / Admin@123
+- cskh@fastfood.local / Admin@123
+- marketing@fastfood.local / Admin@123
