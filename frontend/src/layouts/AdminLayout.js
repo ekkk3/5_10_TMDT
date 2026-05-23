@@ -37,6 +37,7 @@ export const AdminLayout = (content, options = {}) => {
         <nav class="admin-subnav" aria-label="Dieu huong quan tri">
           ${session.permissions?.includes('ORDER_MANAGE') ? '<a class="admin-subnav__link" href="#/admin/orders">Don hang</a>' : ''}
           ${session.permissions?.includes('KITCHEN_KDS') ? '<a class="admin-subnav__link" href="#/kitchen">KDS bep</a>' : ''}
+          ${session.permissions?.includes('USER_MANAGE') ? '<a class="admin-subnav__link" href="#/admin/users">Tai khoan</a>' : ''}
         </nav>
         ${content}
       </main>

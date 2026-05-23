@@ -10,8 +10,10 @@ const escapeHtml = (value = '') =>
 
 const permissionLabels = {
   ADMIN_DASHBOARD: 'Tong quan quan tri',
+  ADMIN_ACCESS: 'Truy cap noi bo',
   ORDER_MANAGE: 'Quan ly don hang',
   KITCHEN_KDS: 'Man hinh bep',
+  USER_MANAGE: 'Quan ly tai khoan',
   DELIVERY_MANAGE: 'Dieu phoi giao hang',
   CUSTOMER_SUPPORT: 'Cham soc khach hang',
   MARKETING_MANAGE: 'Marketing'
@@ -100,6 +102,7 @@ const renderDashboard = ({ user, permissions, dashboard_path: dashboardPath }) =
         <div class="admin-dashboard-actions">
           ${(permissions || []).includes('ORDER_MANAGE') ? '<a class="button button-primary" href="#/admin/orders">Quan ly don hang</a>' : ''}
           ${(permissions || []).includes('KITCHEN_KDS') ? '<a class="button button-primary" href="#/kitchen">KDS bep</a>' : ''}
+          ${(permissions || []).includes('USER_MANAGE') ? '<a class="button button-primary" href="#/admin/users">Quan ly tai khoan</a>' : ''}
         </div>
       </section>
     </div>

@@ -18,27 +18,27 @@ const failedAdminLoginAttempts = new Map();
 const INTERNAL_ROLE_ACCESS = {
   ADMIN: {
     dashboardPath: '/admin',
-    permissions: ['ADMIN_DASHBOARD', 'ORDER_MANAGE', 'KITCHEN_KDS', 'DELIVERY_MANAGE', 'CUSTOMER_SUPPORT', 'MARKETING_MANAGE']
+    permissions: ['ADMIN_ACCESS', 'ADMIN_DASHBOARD', 'ORDER_MANAGE', 'KITCHEN_KDS', 'USER_MANAGE', 'DELIVERY_MANAGE', 'CUSTOMER_SUPPORT', 'MARKETING_MANAGE']
   },
   MANAGER: {
     dashboardPath: '/admin',
-    permissions: ['ADMIN_DASHBOARD', 'ORDER_MANAGE', 'KITCHEN_KDS', 'DELIVERY_MANAGE', 'CUSTOMER_SUPPORT', 'MARKETING_MANAGE']
+    permissions: ['ADMIN_ACCESS', 'ADMIN_DASHBOARD', 'ORDER_MANAGE', 'KITCHEN_KDS', 'USER_MANAGE', 'DELIVERY_MANAGE', 'CUSTOMER_SUPPORT', 'MARKETING_MANAGE']
   },
   KITCHEN: {
     dashboardPath: '/kitchen',
-    permissions: ['KITCHEN_KDS']
+    permissions: ['ADMIN_ACCESS', 'KITCHEN_KDS']
   },
   DELIVERY: {
     dashboardPath: '/admin/delivery',
-    permissions: ['DELIVERY_MANAGE']
+    permissions: ['ADMIN_ACCESS', 'DELIVERY_MANAGE']
   },
   CSKH: {
-    dashboardPath: '/admin/support',
-    permissions: ['CUSTOMER_SUPPORT']
+    dashboardPath: '/admin/orders',
+    permissions: ['ADMIN_ACCESS', 'ORDER_MANAGE', 'CUSTOMER_SUPPORT']
   },
   MARKETING: {
     dashboardPath: '/admin/marketing',
-    permissions: ['MARKETING_MANAGE']
+    permissions: ['ADMIN_ACCESS', 'MARKETING_MANAGE']
   }
 };
 
