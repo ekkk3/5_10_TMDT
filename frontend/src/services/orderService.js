@@ -13,5 +13,13 @@ export const orderService = {
     });
     const response = await apiService.get(`/orders/tracking?${query.toString()}`);
     return response.data;
+  },
+
+  cancelGuestOrder: async ({ orderCode, phone, cancelReason }) => {
+    const response = await apiService.patch(`/orders/guest/${encodeURIComponent(String(orderCode || '').trim())}/cancel`, {
+      phone: String(phone || '').trim(),
+      cancel_reason: String(cancelReason || '').trim()
+    });
+    return response.data;
   }
 };

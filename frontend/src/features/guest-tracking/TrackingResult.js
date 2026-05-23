@@ -97,7 +97,7 @@ export const TrackingResult = (order) => {
         </div>
         <div>
           <span>Thanh toan</span>
-          <strong>${escapeHtml(order.payment_status)}</strong>
+          <strong>${escapeHtml(order.payment_method || '-')} / ${escapeHtml(order.payment_status || '-')}</strong>
         </div>
         <div>
           <span>Cap nhat gan nhat</span>
