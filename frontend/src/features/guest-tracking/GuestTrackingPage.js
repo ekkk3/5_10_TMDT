@@ -32,6 +32,33 @@ const validateTrackingForm = (values = {}) => {
   return errors;
 };
 
+const renderCancelOrderForm = ({ order, cancelReason = '', cancelError = '', fieldErrors = {}, isCancelling = false, cancelMessage = '' }) => {
+  if (!order || order.order_status !== 'PENDING') {
+    return '';
+  }
+
+  return `
+    <section class="tracking-cancel-form-panel">
+      <div>
+        <h3>Huy don hang</h3>
+        <p>Don dang cho xac nhan nen ban co the tu huy. He thong se ghi lai ly do huy vao lich su don hang.</p>
+      </div>
+      ${cancelMessage ? `<div class="tracking-cancel-message success">${escapeHtml(cancelMessage)}</div>` : ''}
+      ${cancelError ? `<div class="tracking-cancel-message" role="alert">${escapeHtml(cancelError)}</div>` : ''}
+      <form class="tracking-cancel-form" data-guest-cancel-form>
+        <label class="tracking-field ${fieldErrors.cancel_reason ? 'has-error' : ''}">
+          <span>Ly do huy</span>
+          <textarea name="cancelReason" maxlength="255" rows="3" placeholder="Vi du: Toi muon doi mon khac">${escapeHtml(cancelReason)}</textarea>
+          ${fieldErrors.cancel_reason ? `<p class="tracking-field__error">${escapeHtml(fieldErrors.cancel_reason)}</p>` : ''}
+        </label>
+        <button class="button button-danger tracking-cancel-submit" type="submit" ${isCancelling ? 'disabled' : ''}>
+          ${isCancelling ? 'Dang huy don...' : 'Huy don'}
+        </button>
+      </form>
+    </section>
+  `;
+};
+
 const pageStyles = `
   <style>
     .guest-tracking-page { display: grid; gap: 22px; }
@@ -41,7 +68,7 @@ const pageStyles = `
     .tracking-form { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto; gap: 12px; align-items: end; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
     .tracking-field { display: grid; gap: 7px; color: var(--muted); font-weight: 800; }
     .tracking-field input { width: 100%; min-height: 46px; border: 1px solid var(--line); border-radius: 6px; padding: 11px 12px; color: var(--ink); font: inherit; background: #fff; }
-    .tracking-field.has-error input { border-color: var(--red); box-shadow: 0 0 0 2px rgba(201, 31, 31, 0.1); }
+    .tracking-field.has-error input, .tracking-field.has-error textarea { border-color: var(--red); box-shadow: 0 0 0 2px rgba(201, 31, 31, 0.1); }
     .tracking-field__error { margin: 0; color: #b3261e; font-size: 13px; line-height: 1.35; }
     .tracking-form__submit { min-height: 46px; white-space: nowrap; }
     .tracking-message { padding: 14px 16px; border: 1px solid #f2b8b5; border-radius: 8px; background: #fff7f6; color: #9f1f18; font-weight: 800; }
@@ -57,6 +84,15 @@ const pageStyles = `
     .tracking-summary strong { overflow-wrap: anywhere; }
     .tracking-cancel { padding: 14px; border: 1px solid #f2b8b5; border-radius: 8px; background: #fff7f6; }
     .tracking-cancel p { margin: 6px 0 0; color: #9f1f18; line-height: 1.45; }
+    .tracking-cancel-form-panel { display: grid; gap: 14px; padding: 18px; border: 1px solid #f2b8b5; border-radius: 8px; background: #fff7f6; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
+    .tracking-cancel-form-panel h3 { margin: 0 0 6px; }
+    .tracking-cancel-form-panel p { margin: 0; color: #7a2f2a; line-height: 1.45; }
+    .tracking-cancel-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+    .tracking-cancel-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 11px 12px; color: var(--ink); font: inherit; resize: vertical; background: #fff; }
+    .tracking-cancel-submit { min-height: 46px; white-space: nowrap; }
+    .button-danger { color: #fff; background: var(--red); }
+    .tracking-cancel-message { padding: 12px; border: 1px solid #f2b8b5; border-radius: 8px; color: #9f1f18; background: #fff; font-weight: 800; }
+    .tracking-cancel-message.success { border-color: #9bd2ad; color: #176a38; background: #f1fff5; }
     .tracking-section { display: grid; gap: 12px; }
     .tracking-timeline { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
     .tracking-timeline__item { display: grid; gap: 8px; min-width: 0; color: var(--muted); }
@@ -73,6 +109,7 @@ const pageStyles = `
     @media (max-width: 900px) {
       .tracking-form, .tracking-summary { grid-template-columns: 1fr 1fr; }
       .tracking-form__submit { grid-column: 1 / -1; }
+      .tracking-cancel-form { grid-template-columns: 1fr; }
       .tracking-timeline { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     @media (max-width: 640px) {
@@ -84,7 +121,18 @@ const pageStyles = `
   </style>
 `;
 
-const renderTrackingPageBody = ({ values = {}, fieldErrors = {}, submitError = '', isLoading = false, result = null } = {}) => `
+const renderTrackingPageBody = ({
+  values = {},
+  fieldErrors = {},
+  submitError = '',
+  isLoading = false,
+  result = null,
+  cancelReason = '',
+  cancelError = '',
+  cancelFieldErrors = {},
+  isCancelling = false,
+  cancelMessage = ''
+} = {}) => `
   <div class="tracking-header">
     <div>
       <h1>Tra cuu don hang</h1>
@@ -95,6 +143,7 @@ const renderTrackingPageBody = ({ values = {}, fieldErrors = {}, submitError = '
   ${TrackingForm({ values, fieldErrors, isLoading })}
   ${submitError ? `<div class="tracking-message" role="alert">${escapeHtml(submitError)}</div>` : ''}
   ${result ? TrackingResult(result) : ''}
+  ${renderCancelOrderForm({ order: result, cancelReason, cancelError, fieldErrors: cancelFieldErrors, isCancelling, cancelMessage })}
 `;
 
 export const GuestTrackingPage = () => `
@@ -113,12 +162,76 @@ export const mountGuestTrackingPage = () => {
   let submitError = '';
   let isLoading = false;
   let result = null;
+  let cancelReason = '';
+  let cancelError = '';
+  let cancelFieldErrors = {};
+  let isCancelling = false;
+  let cancelMessage = '';
 
   const render = () => {
-    root.innerHTML = renderTrackingPageBody({ values, fieldErrors, submitError, isLoading, result });
+    root.innerHTML = renderTrackingPageBody({
+      values,
+      fieldErrors,
+      submitError,
+      isLoading,
+      result,
+      cancelReason,
+      cancelError,
+      cancelFieldErrors,
+      isCancelling,
+      cancelMessage
+    });
   };
 
   root.addEventListener('submit', async (event) => {
+    const cancelForm = event.target.closest('[data-guest-cancel-form]');
+    if (cancelForm) {
+      event.preventDefault();
+      const formData = new FormData(cancelForm);
+      cancelReason = String(formData.get('cancelReason') || '').trim();
+      cancelError = '';
+      cancelMessage = '';
+      cancelFieldErrors = {};
+
+      if (!cancelReason) {
+        cancelFieldErrors = { cancel_reason: 'Vui long nhap ly do huy don' };
+        render();
+        return;
+      }
+
+      if (!result?.order_code || !values.phone) {
+        cancelError = 'Can tra cuu don bang ma don va so dien thoai truoc khi huy.';
+        render();
+        return;
+      }
+
+      try {
+        isCancelling = true;
+        render();
+
+        await orderService.cancelGuestOrder({
+          orderCode: result.order_code,
+          phone: values.phone,
+          cancelReason
+        });
+
+        result = await orderService.trackGuestOrder({
+          orderCode: result.order_code,
+          phone: values.phone
+        });
+        cancelReason = '';
+        cancelMessage = 'Don hang da duoc huy thanh cong.';
+      } catch (error) {
+        cancelFieldErrors = error?.errors && typeof error.errors === 'object' ? error.errors : {};
+        cancelError = error?.message || 'Khong the huy don hang. Vui long thu lai.';
+      } finally {
+        isCancelling = false;
+        render();
+      }
+
+      return;
+    }
+
     const form = event.target.closest('[data-tracking-form]');
     if (!form) return;
 
@@ -131,6 +244,10 @@ export const mountGuestTrackingPage = () => {
     fieldErrors = validateTrackingForm(values);
     submitError = '';
     result = null;
+    cancelReason = '';
+    cancelError = '';
+    cancelFieldErrors = {};
+    cancelMessage = '';
 
     if (Object.keys(fieldErrors).length) {
       render();
