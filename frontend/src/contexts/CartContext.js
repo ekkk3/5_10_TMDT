@@ -73,6 +73,11 @@ export const CartContext = {
     return cartItems;
   },
 
+  replaceItems: (items = []) => {
+    clearVoucherState();
+    return setCartItems(items);
+  },
+
   getSubtotal: () => cartService.getSubtotal(cartItems),
 
   getFinalTotal: () => Math.max(0, CartContext.getSubtotal() - discountAmount),

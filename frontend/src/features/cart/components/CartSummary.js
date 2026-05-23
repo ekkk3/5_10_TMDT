@@ -15,7 +15,9 @@ export const CartSummary = ({
   discountAmount = 0,
   finalTotal = 0,
   voucherError = '',
-  isApplyingVoucher = false
+  isApplyingVoucher = false,
+  canCheckout = true,
+  checkoutBlockReason = ''
 } = {}) => `
   <aside class="cart-summary" aria-label="Tong tien gio hang">
     <h2>Tong gio hang</h2>
@@ -46,7 +48,12 @@ export const CartSummary = ({
       <span>Tong tien</span>
       <strong>${formatMoney(finalTotal)}</strong>
     </div>
-    <button class="button button-primary cart-checkout" type="button" data-continue-order>Tiep tuc dat hang</button>
+    ${
+      checkoutBlockReason
+        ? `<p class="cart-summary__warning">${checkoutBlockReason}</p>`
+        : ''
+    }
+    <button class="button button-primary cart-checkout" type="button" data-continue-order ${canCheckout ? '' : 'disabled'}>Tiep tuc dat hang</button>
     <button class="button button-secondary cart-clear" type="button" data-clear-cart>Xoa gio hang</button>
   </aside>
 `;

@@ -458,6 +458,10 @@ export const mountMenuPage = () => {
       return;
     }
 
+    if (!isFoodAvailable(activeModalFood)) {
+      return;
+    }
+
     if (!validateSelectedOptions(modalRoot)) {
       return;
     }
@@ -500,6 +504,19 @@ export const mountMenuPage = () => {
     const totalPriceNode = modalRoot.querySelector('[data-food-total-price]');
     if (totalPriceNode) {
       const quantity = Math.max(1, Number.parseInt(modalRoot.querySelector('[data-add-quantity]')?.value, 10) || 1);
+      totalPriceNode.textContent = formatMoney(calculateOptionTotal(modalRoot, activeModalFood.price) * quantity);
+    }
+  });
+
+  modalRoot.addEventListener('input', (event) => {
+    const quantityInput = event.target.closest('[data-add-quantity]');
+    if (!quantityInput || !activeModalFood) {
+      return;
+    }
+
+    const totalPriceNode = modalRoot.querySelector('[data-food-total-price]');
+    if (totalPriceNode) {
+      const quantity = Math.max(1, Number.parseInt(quantityInput.value, 10) || 1);
       totalPriceNode.textContent = formatMoney(calculateOptionTotal(modalRoot, activeModalFood.price) * quantity);
     }
   });
