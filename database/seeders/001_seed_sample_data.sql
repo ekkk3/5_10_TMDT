@@ -3,15 +3,23 @@ USE fast_food_system;
 INSERT INTO roles (role_name, description) VALUES
   ('CUSTOMER', 'Khach hang'),
   ('ADMIN', 'Quan tri vien'),
-  ('KITCHEN', 'Nhan vien bep')
+  ('MANAGER', 'Quan ly van hanh'),
+  ('KITCHEN', 'Nhan vien bep'),
+  ('CSKH', 'Nhan vien cham soc khach hang'),
+  ('MARKETING', 'Nhan vien marketing'),
+  ('DELIVERY', 'Nhan vien dieu phoi giao hang')
 ON DUPLICATE KEY UPDATE description = VALUES(description);
 
 INSERT INTO users (role_id, full_name, email, phone, password_hash, status) VALUES
-  ((SELECT role_id FROM roles WHERE role_name = 'ADMIN'), 'System Admin', 'admin@fastfood.local', '0900000001', '$2a$10$exampleAdminPasswordHash', 'ACTIVE'),
-  ((SELECT role_id FROM roles WHERE role_name = 'CUSTOMER'), 'Nguyen Van Khach', 'customer@fastfood.local', '0900000002', '$2a$10$exampleCustomerPasswordHash', 'ACTIVE')
+  ((SELECT role_id FROM roles WHERE role_name = 'ADMIN'), 'System Admin', 'admin@fastfood.local', '0900000001', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'KITCHEN'), 'Kitchen Staff', 'kitchen@fastfood.local', '0900000003', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'CSKH'), 'CSKH Staff', 'cskh@fastfood.local', '0900000004', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'MARKETING'), 'Marketing Staff', 'marketing@fastfood.local', '0900000005', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE'),
+  ((SELECT role_id FROM roles WHERE role_name = 'CUSTOMER'), 'Nguyen Van Khach', 'customer@fastfood.local', '0900000002', '$2a$10$V/HnSI6hRjuEL10IMalXSeiOPDrG3DxwdvXDNpu6woZyEWr7HM3g.', 'ACTIVE')
 ON DUPLICATE KEY UPDATE
   role_id = VALUES(role_id),
   full_name = VALUES(full_name),
+  password_hash = VALUES(password_hash),
   phone = VALUES(phone),
   status = VALUES(status);
 
@@ -23,6 +31,18 @@ INSERT INTO categories (category_name, description, status) VALUES
 ON DUPLICATE KEY UPDATE
   description = VALUES(description),
   status = VALUES(status);
+
+INSERT INTO delivery_areas (area_name, district, city, delivery_fee, is_active)
+SELECT 'Trung tam Quan 1', 'Quan 1', 'TP HCM', 15000, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM delivery_areas WHERE district = 'Quan 1' AND city = 'TP HCM');
+
+INSERT INTO delivery_areas (area_name, district, city, delivery_fee, is_active)
+SELECT 'Quan 3', 'Quan 3', 'TP HCM', 18000, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM delivery_areas WHERE district = 'Quan 3' AND city = 'TP HCM');
+
+INSERT INTO delivery_areas (area_name, district, city, delivery_fee, is_active)
+SELECT 'Binh Thanh', 'Binh Thanh', 'TP HCM', 22000, TRUE
+WHERE NOT EXISTS (SELECT 1 FROM delivery_areas WHERE district = 'Binh Thanh' AND city = 'TP HCM');
 
 INSERT INTO foods (category_id, food_name, description, price, image_url, status)
 SELECT category_id, 'Classic Beef Burger', 'Burger bo, phomai va rau tuoi', 59000, '/assets/images/classic-beef-burger.jpg', 'ACTIVE'
@@ -108,7 +128,14 @@ INSERT INTO vouchers (
   ('MEMBER50K', 'Uu dai rieng cho thanh vien', 'AMOUNT', 50000, 200000, NULL, 1, 'PERSONAL', '2026-01-01 00:00:00', '2026-12-31 23:59:59', 'ACTIVE')
 ON DUPLICATE KEY UPDATE
   voucher_name = VALUES(voucher_name),
+  discount_type = VALUES(discount_type),
   discount_value = VALUES(discount_value),
+  min_order_amount = VALUES(min_order_amount),
+  max_discount_amount = VALUES(max_discount_amount),
+  usage_limit = VALUES(usage_limit),
+  target_type = VALUES(target_type),
+  start_date = VALUES(start_date),
+  end_date = VALUES(end_date),
   status = VALUES(status);
 
 INSERT INTO user_vouchers (user_id, voucher_id, status)

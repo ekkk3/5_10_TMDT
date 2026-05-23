@@ -46,9 +46,17 @@ a {
 }
 
 .brand {
+  display: grid;
+  gap: 2px;
   font-weight: 800;
   font-size: 20px;
   letter-spacing: 0;
+}
+
+.brand small {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.86;
 }
 
 .nav-links {
@@ -70,6 +78,18 @@ a {
 
 .nav-link:hover {
   background: rgba(255, 255, 255, 0.18);
+}
+
+.nav-link--switch {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.navbar--member {
+  background: linear-gradient(90deg, #0f766e, #0f9f6e 62%, var(--gold));
+}
+
+.navbar--admin {
+  background: linear-gradient(90deg, #2b1f66, #8b1e52 58%, var(--orange));
 }
 
 .page {
@@ -106,6 +126,115 @@ a {
     radial-gradient(circle at 32% 28%, #fff7cc 0 14%, transparent 15%),
     linear-gradient(145deg, #d71920 0%, #f97316 52%, #facc15 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45), 0 20px 40px rgba(116, 36, 0, 0.18);
+}
+
+.session-home {
+  display: grid;
+  gap: 24px;
+}
+
+.session-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.session-eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--red);
+  font-weight: 900;
+}
+
+.session-hero h1 {
+  margin: 0 0 14px;
+  font-size: clamp(34px, 5vw, 56px);
+  line-height: 1.05;
+}
+
+.session-hero p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.session-current,
+.session-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08);
+}
+
+.session-current {
+  display: grid;
+  gap: 12px;
+  align-content: center;
+  padding: 20px;
+}
+
+.session-current span,
+.session-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.session-current strong {
+  color: var(--red);
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.session-current--member strong {
+  color: #0f766e;
+}
+
+.session-current--admin strong {
+  color: #5b2bbf;
+}
+
+.session-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.session-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 20px;
+}
+
+.session-card h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.session-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.session-card--active {
+  border-color: var(--red);
+}
+
+.session-card--admin {
+  border-color: #c084fc;
+}
+
+.session-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .actions {
@@ -145,6 +274,25 @@ a {
   color: var(--muted);
 }
 
+.admin-subnav {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.admin-subnav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff1cc;
+  font-weight: 800;
+}
+
 @media (max-width: 760px) {
   .navbar {
     align-items: flex-start;
@@ -153,6 +301,11 @@ a {
   }
 
   .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .session-hero,
+  .session-grid {
     grid-template-columns: 1fr;
   }
 

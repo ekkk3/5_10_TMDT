@@ -1,4 +1,13 @@
 import { menuService } from '../../services/menuService.js';
+import { foodOptionsService } from '../food-options/foodOptionsService.js';
+import { CartContext } from '../../contexts/CartContext.js';
+import {
+  FoodOptionSelector,
+  buildCustomizedFoodPayload,
+  calculateOptionTotal,
+  enforceMaxSelect,
+  validateSelectedOptions
+} from '../food-options/components/FoodOptionSelector.js';
 
 
 const moneyFormatter = new Intl.NumberFormat('vi-VN', {
@@ -69,7 +78,7 @@ const renderFoodCard = (food) => {
         </div>
         <div class="food-card__actions">
           <button class="button button-secondary" type="button" data-view-detail="${food.food_id}">Chi tiet</button>
-          <button class="button button-primary" type="button" ${isOutOfStock ? 'disabled' : ''}>
+          <button class="button button-primary" type="button" data-view-detail="${food.food_id}" ${isOutOfStock ? 'disabled' : ''}>
             ${isOutOfStock ? 'Het hang' : 'Them vao gio'}
           </button>
         </div>
@@ -101,7 +110,7 @@ const renderReviews = (reviews = []) => {
 };
 
 
-const renderModal = (food) => {
+const renderModal = (food, optionGroups = []) => {
   const isOutOfStock = food.status === 'OUT_OF_STOCK';
   const imageUrl = food.image_url || getFoodImage(food.food_name);
   const fallbackImage = getFoodImage(food.food_name);
@@ -117,10 +126,21 @@ const renderModal = (food) => {
       <div class="menu-modal__content">
         <span class="menu-modal__category">${escapeHtml(food.category?.category_name || 'Khac')}</span>
         <h2 id="food-detail-title">${escapeHtml(food.food_name)}</h2>
-        <strong>${formatMoney(food.price)}</strong>
+        <strong data-food-total-price>${formatMoney(food.price)}</strong>
         <p>${escapeHtml(food.description || 'Mon ngon dang duoc cap nhat mo ta.')}</p>
         <div class="menu-modal__rating">${formatRating(food.average_rating)}</div>
-        <button class="button button-primary" type="button" ${isOutOfStock ? 'disabled' : ''}>
+        ${FoodOptionSelector(optionGroups)}
+        <div class="menu-modal__cart-controls">
+          <label>
+            <span>So luong</span>
+            <input type="number" min="1" step="1" value="1" data-add-quantity />
+          </label>
+          <label>
+            <span>Ghi chu</span>
+            <textarea rows="2" maxlength="180" placeholder="Vi du: it cay, khong hanh..." data-add-note></textarea>
+          </label>
+        </div>
+        <button class="button button-primary menu-modal__add" type="button" data-add-customized-food ${isOutOfStock ? 'disabled' : ''}>
           ${isOutOfStock ? 'Het hang' : 'Them vao gio'}
         </button>
         <div class="menu-modal__reviews">
@@ -139,9 +159,15 @@ const pageStyles = `
     .menu-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
     .menu-header h1 { margin: 0 0 8px; font-size: 34px; }
     .menu-header p { margin: 0; max-width: 680px; color: var(--muted); line-height: 1.5; }
-    .menu-controls { display: grid; grid-template-columns: minmax(220px, 1fr) 160px 160px auto; gap: 10px; margin-bottom: 18px; }
+    .menu-shell { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 18px; align-items: start; }
+    .menu-sidebar { position: sticky; top: 86px; display: grid; gap: 16px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
+    .menu-sidebar h2 { margin: 0; font-size: 20px; }
+    .menu-sidebar__section { display: grid; gap: 10px; }
+    .menu-sidebar__section h3 { margin: 0; color: var(--muted); font-size: 13px; text-transform: uppercase; }
+    .menu-results { display: grid; gap: 16px; }
+    .menu-controls { display: grid; gap: 10px; }
     .menu-input { width: 100%; min-height: 44px; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; font: inherit; color: var(--ink); background: #fff; }
-    .menu-categories { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+    .menu-categories { display: grid; gap: 8px; }
     .menu-chip { min-height: 38px; border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; background: #fff; color: var(--ink); font-weight: 700; cursor: pointer; }
     .menu-chip.is-active, .menu-chip:hover { background: var(--red); border-color: var(--red); color: #fff; }
     .menu-status { padding: 24px; border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--muted); }
@@ -156,6 +182,10 @@ const pageStyles = `
     .food-card p { min-height: 42px; margin: 10px 0; color: var(--muted); line-height: 1.45; }
     .food-card__meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; color: var(--muted); font-size: 14px; }
     .food-card__actions { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; }
+    .menu-store-footer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fffaf3; }
+    .menu-store-footer div { display: grid; gap: 4px; }
+    .menu-store-footer span { color: var(--muted); font-size: 13px; font-weight: 800; }
+    .menu-store-footer strong { color: var(--ink); }
     .button:disabled { cursor: not-allowed; opacity: 0.55; }
     .menu-modal-root:not(:empty) { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 18px; }
     .menu-modal__backdrop { position: absolute; inset: 0; background: rgba(36, 19, 10, 0.58); }
@@ -168,18 +198,44 @@ const pageStyles = `
     .menu-modal__content > strong { display: block; margin-bottom: 12px; color: var(--red); font-size: 22px; }
     .menu-modal__content > p { color: var(--muted); line-height: 1.6; }
     .menu-modal__rating { margin: 12px 0; font-weight: 800; }
+    .menu-modal__cart-controls { display: grid; gap: 10px; margin-top: 14px; }
+    .menu-modal__cart-controls label { display: grid; gap: 6px; color: var(--muted); font-weight: 800; }
+    .menu-modal__cart-controls input, .menu-modal__cart-controls textarea { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--ink); font: inherit; background: #fff; }
+    .menu-modal__cart-controls input { max-width: 120px; }
+    .menu-modal__add { width: 100%; margin-top: 14px; }
+    .food-options { display: grid; gap: 14px; margin-top: 18px; }
+    .food-options__empty { margin-top: 16px; padding: 12px; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); }
+    .food-option-group { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: #fffaf3; }
+    .food-option-group.has-error { border-color: var(--red); box-shadow: 0 0 0 2px rgba(201, 31, 31, 0.12); }
+    .food-option-group__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .food-option-group__header h3 { margin: 0; font-size: 16px; }
+    .food-option-group__header span { color: var(--muted); font-size: 13px; font-weight: 700; }
+    .food-option-group__choices { display: grid; gap: 8px; }
+    .food-option-group__choices--size { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .food-option-choice { min-height: 54px; display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #f0c372; border-radius: 8px; background: #fff; cursor: pointer; }
+    .food-option-choice:has(input:checked) { border-color: var(--red); background: #fff1e6; }
+    .food-option-choice input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--red); }
+    .food-option-choice span { min-width: 0; display: grid; gap: 3px; }
+    .food-option-choice strong { font-size: 14px; line-height: 1.2; }
+    .food-option-choice small { color: var(--muted); font-weight: 700; }
+    .food-option-choice.is-disabled, .food-option-choice.is-limit-disabled { opacity: 0.48; cursor: not-allowed; }
+    .food-option-group__error { min-height: 18px; margin: 0; color: var(--red); font-size: 13px; font-weight: 700; }
     .menu-modal__reviews { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
     .menu-modal__reviews h3 { margin: 0 0 12px; }
     .review-item { padding: 12px 0; border-bottom: 1px solid #f2d4a6; }
     .review-item div { display: flex; justify-content: space-between; gap: 12px; }
     .review-item p, .review-empty { margin: 8px 0 0; color: var(--muted); }
     @media (max-width: 920px) {
+      .menu-shell { grid-template-columns: 1fr; }
+      .menu-sidebar { position: static; }
       .menu-controls { grid-template-columns: 1fr 1fr; }
+      .menu-categories { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .food-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 640px) {
       .menu-header { display: block; }
-      .menu-controls, .food-grid, .menu-modal { grid-template-columns: 1fr; }
+      .menu-controls, .menu-categories, .food-grid, .menu-modal, .menu-store-footer { grid-template-columns: 1fr; }
+      .food-option-group__choices--size { grid-template-columns: 1fr; }
       .menu-modal__image { min-height: 240px; }
       .food-card__actions { grid-template-columns: 1fr; }
     }
@@ -198,16 +254,30 @@ export const MenuPage = () => `
     </div>
 
 
-    <form class="menu-controls" data-menu-form>
-      <input class="menu-input" name="keyword" type="search" placeholder="Tim burger, ga ran, do uong..." autocomplete="off" />
-      <input class="menu-input" name="minPrice" type="number" min="0" step="1000" placeholder="Gia tu" />
-      <input class="menu-input" name="maxPrice" type="number" min="0" step="1000" placeholder="Gia den" />
-      <button class="button button-primary" type="submit">Tim kiem</button>
-    </form>
+    <div class="menu-shell">
+      <aside class="menu-sidebar" aria-label="Bo loc thuc don">
+        <h2>Bo loc</h2>
+        <form class="menu-controls" data-menu-form>
+          <input class="menu-input" name="keyword" type="search" placeholder="Tim burger, ga ran, do uong..." autocomplete="off" />
+          <input class="menu-input" name="minPrice" type="number" min="0" step="1000" placeholder="Gia tu" />
+          <input class="menu-input" name="maxPrice" type="number" min="0" step="1000" placeholder="Gia den" />
+          <button class="button button-primary" type="submit">Tim kiem</button>
+        </form>
+        <div class="menu-sidebar__section">
+          <h3>Danh muc</h3>
+          <div class="menu-categories" data-menu-categories></div>
+        </div>
+      </aside>
 
-
-    <div class="menu-categories" data-menu-categories></div>
-    <div data-menu-content class="menu-status">Dang tai thuc don...</div>
+      <div class="menu-results">
+        <div data-menu-content class="menu-status">Dang tai thuc don...</div>
+        <footer class="menu-store-footer" aria-label="Thong tin cua hang">
+          <div><span>Gio phuc vu</span><strong>08:00 - 22:00 hang ngay</strong></div>
+          <div><span>Khu vuc giao</span><strong>Quan 1, Quan 3, Binh Thanh</strong></div>
+          <div><span>Ho tro</span><strong>0900 000 001</strong></div>
+        </footer>
+      </div>
+    </div>
     <div class="menu-modal-root" data-menu-modal-root></div>
   </section>
 `;
@@ -232,6 +302,8 @@ export const mountMenuPage = () => {
       maxPrice: ''
     }
   };
+
+  let activeModalFood = null;
 
 
   const setStatus = (message) => {
@@ -309,12 +381,19 @@ export const mountMenuPage = () => {
     if (!detailButton) return;
 
 
+    activeModalFood = null;
     modalRoot.innerHTML = '<div class="menu-modal__backdrop"></div><section class="menu-modal"><div class="menu-modal__content">Dang tai chi tiet mon...</div></section>';
 
 
     try {
-      const food = await menuService.getFoodById(detailButton.dataset.viewDetail);
-      modalRoot.innerHTML = renderModal(food);
+      const foodId = detailButton.dataset.viewDetail;
+      const [food, optionGroups] = await Promise.all([
+        menuService.getFoodById(foodId),
+        foodOptionsService.getFoodOptions(foodId)
+      ]);
+
+      activeModalFood = food;
+      modalRoot.innerHTML = renderModal(food, optionGroups);
     } catch (error) {
       modalRoot.innerHTML = `<div class="menu-modal__backdrop" data-close-modal></div><section class="menu-modal"><div class="menu-modal__content">${escapeHtml(error.message || 'Khong tai duoc chi tiet mon.')}</div></section>`;
     }
@@ -324,6 +403,58 @@ export const mountMenuPage = () => {
   modalRoot.addEventListener('click', (event) => {
     if (event.target.closest('[data-close-modal]')) {
       modalRoot.innerHTML = '';
+      activeModalFood = null;
+      return;
+    }
+
+    const addButton = event.target.closest('[data-add-customized-food]');
+    if (!addButton || !activeModalFood) {
+      return;
+    }
+
+    if (!validateSelectedOptions(modalRoot)) {
+      return;
+    }
+
+    const payload = buildCustomizedFoodPayload(activeModalFood, modalRoot);
+    const quantityInput = modalRoot.querySelector('[data-add-quantity]');
+    const noteInput = modalRoot.querySelector('[data-add-note]');
+    const quantity = Math.max(1, Number.parseInt(quantityInput?.value, 10) || 1);
+
+    CartContext.addItem({
+      ...payload,
+      image_url: activeModalFood.image_url || getFoodImage(activeModalFood.food_name),
+      quantity,
+      note: noteInput?.value || '',
+      item_total: Number(payload.total_price || 0) * quantity
+    });
+
+    addButton.textContent = 'Da them vao gio';
+    window.setTimeout(() => {
+      modalRoot.innerHTML = '';
+      activeModalFood = null;
+      window.location.hash = '#/cart';
+    }, 450);
+  });
+
+  modalRoot.addEventListener('change', (event) => {
+    const optionInput = event.target.closest('[data-food-option]');
+    if (!optionInput || !activeModalFood) {
+      return;
+    }
+
+    const group = optionInput.closest('[data-option-group]');
+    if (group) {
+      validateSelectedOptions(modalRoot);
+      enforceMaxSelect(group, optionInput);
+    } else {
+      validateSelectedOptions(modalRoot);
+    }
+
+    const totalPriceNode = modalRoot.querySelector('[data-food-total-price]');
+    if (totalPriceNode) {
+      const quantity = Math.max(1, Number.parseInt(modalRoot.querySelector('[data-add-quantity]')?.value, 10) || 1);
+      totalPriceNode.textContent = formatMoney(calculateOptionTotal(modalRoot, activeModalFood.price) * quantity);
     }
   });
 
