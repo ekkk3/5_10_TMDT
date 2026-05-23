@@ -148,3 +148,98 @@ WHERE users.email = 'customer@fastfood.local'
     WHERE user_vouchers.user_id = users.user_id
       AND user_vouchers.voucher_id = vouchers.voucher_id
   );
+
+INSERT INTO inventory (food_id, quantity, is_unlimited)
+SELECT food_id, 40, FALSE
+FROM foods
+WHERE food_name IN ('Classic Beef Burger', 'Crispy Chicken Burger', 'Ga Ran 2 Mieng', 'Khoai Tay Chien')
+  AND NOT EXISTS (
+    SELECT 1 FROM inventory WHERE inventory.food_id = foods.food_id
+  );
+
+INSERT INTO inventory (food_id, quantity, is_unlimited)
+SELECT food_id, 0, FALSE
+FROM foods
+WHERE food_name = 'Tra Dao Cam Sa'
+  AND NOT EXISTS (
+    SELECT 1 FROM inventory WHERE inventory.food_id = foods.food_id
+  );
+
+INSERT INTO orders (
+  order_code,
+  user_id,
+  customer_type,
+  delivery_address,
+  subtotal,
+  delivery_fee,
+  discount_amount,
+  total_amount,
+  order_status,
+  payment_status,
+  payment_method,
+  note
+)
+SELECT
+  'SEED-REVIEW-001',
+  users.user_id,
+  'MEMBER',
+  '12 Nguyen Hue, Quan 1, TP HCM',
+  138000,
+  15000,
+  0,
+  153000,
+  'COMPLETED',
+  'PAID',
+  'COD',
+  'Don mau tao review menu'
+FROM users
+WHERE users.email = 'customer@fastfood.local'
+  AND NOT EXISTS (SELECT 1 FROM orders WHERE order_code = 'SEED-REVIEW-001');
+
+INSERT INTO order_items (order_id, food_id, food_name_snapshot, quantity, unit_price, total_price, note, kitchen_status)
+SELECT orders.order_id, foods.food_id, foods.food_name, 1, foods.price, foods.price, NULL, 'DONE'
+FROM orders
+JOIN foods ON foods.food_name = 'Classic Beef Burger'
+WHERE orders.order_code = 'SEED-REVIEW-001'
+  AND NOT EXISTS (
+    SELECT 1 FROM order_items
+    WHERE order_items.order_id = orders.order_id
+      AND order_items.food_id = foods.food_id
+  );
+
+INSERT INTO order_items (order_id, food_id, food_name_snapshot, quantity, unit_price, total_price, note, kitchen_status)
+SELECT orders.order_id, foods.food_id, foods.food_name, 1, foods.price, foods.price, NULL, 'DONE'
+FROM orders
+JOIN foods ON foods.food_name = 'Ga Ran 2 Mieng'
+WHERE orders.order_code = 'SEED-REVIEW-001'
+  AND NOT EXISTS (
+    SELECT 1 FROM order_items
+    WHERE order_items.order_id = orders.order_id
+      AND order_items.food_id = foods.food_id
+  );
+
+INSERT INTO reviews (user_id, order_id, food_id, rating, comment, status)
+SELECT users.user_id, orders.order_id, foods.food_id, 5, 'Burger ngon, giao nhanh, phan sot vua mieng.', 'APPROVED'
+FROM users
+JOIN orders ON orders.order_code = 'SEED-REVIEW-001'
+JOIN foods ON foods.food_name = 'Classic Beef Burger'
+WHERE users.email = 'customer@fastfood.local'
+  AND NOT EXISTS (
+    SELECT 1 FROM reviews
+    WHERE reviews.user_id = users.user_id
+      AND reviews.order_id = orders.order_id
+      AND reviews.food_id = foods.food_id
+  );
+
+INSERT INTO reviews (user_id, order_id, food_id, rating, comment, status)
+SELECT users.user_id, orders.order_id, foods.food_id, 4, 'Ga ran gion, con nong khi nhan hang.', 'APPROVED'
+FROM users
+JOIN orders ON orders.order_code = 'SEED-REVIEW-001'
+JOIN foods ON foods.food_name = 'Ga Ran 2 Mieng'
+WHERE users.email = 'customer@fastfood.local'
+  AND NOT EXISTS (
+    SELECT 1 FROM reviews
+    WHERE reviews.user_id = users.user_id
+      AND reviews.order_id = orders.order_id
+      AND reviews.food_id = foods.food_id
+  );

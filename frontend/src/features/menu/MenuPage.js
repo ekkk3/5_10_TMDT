@@ -35,6 +35,22 @@ const formatRating = (rating) => {
 };
 
 
+const formatRatingSummary = (food) => {
+  const rating = formatRating(food.average_rating);
+  const reviewCount = Number(food.review_count || 0);
+  return reviewCount > 0 ? `${rating} (${reviewCount})` : rating;
+};
+
+
+const isFoodAvailable = (food) => Boolean(food.is_available) && food.status === 'ACTIVE';
+
+
+const renderAvailabilityBadge = (food) => {
+  const available = isFoodAvailable(food);
+  return `<span class="food-status ${available ? 'is-available' : 'is-out'}">${available ? 'Con hang' : 'Het hang'}</span>`;
+};
+
+
 const getFoodImage = (foodName) => {
   const seed = encodeURIComponent(foodName || 'fast food');
   return `https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=640&q=80&ixid=${seed}`;
@@ -56,7 +72,7 @@ const renderCategories = (categories, activeCategoryId) => `
 
 
 const renderFoodCard = (food) => {
-  const isOutOfStock = food.status === 'OUT_OF_STOCK';
+  const available = isFoodAvailable(food);
   const imageUrl = food.image_url || getFoodImage(food.food_name);
   const fallbackImage = getFoodImage(food.food_name);
 
@@ -74,12 +90,13 @@ const renderFoodCard = (food) => {
         <p>${escapeHtml(food.description || 'Mon ngon dang duoc cap nhat mo ta.')}</p>
         <div class="food-card__meta">
           <span>${escapeHtml(food.category?.category_name || 'Khac')}</span>
-          <span>${formatRating(food.average_rating)}</span>
+          <span>${formatRatingSummary(food)}</span>
         </div>
+        ${renderAvailabilityBadge(food)}
         <div class="food-card__actions">
           <button class="button button-secondary" type="button" data-view-detail="${food.food_id}">Chi tiet</button>
-          <button class="button button-primary" type="button" data-view-detail="${food.food_id}" ${isOutOfStock ? 'disabled' : ''}>
-            ${isOutOfStock ? 'Het hang' : 'Them vao gio'}
+          <button class="button button-primary" type="button" data-view-detail="${food.food_id}" ${available ? '' : 'disabled'}>
+            ${available ? 'Them vao gio' : 'Het hang'}
           </button>
         </div>
       </div>
@@ -111,7 +128,7 @@ const renderReviews = (reviews = []) => {
 
 
 const renderModal = (food, optionGroups = []) => {
-  const isOutOfStock = food.status === 'OUT_OF_STOCK';
+  const available = isFoodAvailable(food);
   const imageUrl = food.image_url || getFoodImage(food.food_name);
   const fallbackImage = getFoodImage(food.food_name);
 
@@ -128,7 +145,10 @@ const renderModal = (food, optionGroups = []) => {
         <h2 id="food-detail-title">${escapeHtml(food.food_name)}</h2>
         <strong data-food-total-price>${formatMoney(food.price)}</strong>
         <p>${escapeHtml(food.description || 'Mon ngon dang duoc cap nhat mo ta.')}</p>
-        <div class="menu-modal__rating">${formatRating(food.average_rating)}</div>
+        <div class="menu-modal__rating">
+          <span>${formatRatingSummary(food)}</span>
+          ${renderAvailabilityBadge(food)}
+        </div>
         ${FoodOptionSelector(optionGroups)}
         <div class="menu-modal__cart-controls">
           <label>
@@ -140,8 +160,8 @@ const renderModal = (food, optionGroups = []) => {
             <textarea rows="2" maxlength="180" placeholder="Vi du: it cay, khong hanh..." data-add-note></textarea>
           </label>
         </div>
-        <button class="button button-primary menu-modal__add" type="button" data-add-customized-food ${isOutOfStock ? 'disabled' : ''}>
-          ${isOutOfStock ? 'Het hang' : 'Them vao gio'}
+        <button class="button button-primary menu-modal__add" type="button" data-add-customized-food ${available ? '' : 'disabled'}>
+          ${available ? 'Them vao gio' : 'Het hang'}
         </button>
         <div class="menu-modal__reviews">
           <h3>Danh gia</h3>
@@ -181,6 +201,9 @@ const pageStyles = `
     .food-card__top strong { color: var(--red); white-space: nowrap; }
     .food-card p { min-height: 42px; margin: 10px 0; color: var(--muted); line-height: 1.45; }
     .food-card__meta { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; color: var(--muted); font-size: 14px; }
+    .food-status { display: inline-flex; align-items: center; width: max-content; min-height: 28px; margin-bottom: 12px; padding: 5px 10px; border-radius: 6px; font-size: 13px; font-weight: 800; }
+    .food-status.is-available { background: #e8f7ee; color: #177245; }
+    .food-status.is-out { background: #fff0ea; color: var(--red); }
     .food-card__actions { display: grid; grid-template-columns: 1fr 1.2fr; gap: 8px; }
     .menu-store-footer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fffaf3; }
     .menu-store-footer div { display: grid; gap: 4px; }
@@ -197,7 +220,8 @@ const pageStyles = `
     .menu-modal h2 { margin: 8px 0; font-size: 30px; }
     .menu-modal__content > strong { display: block; margin-bottom: 12px; color: var(--red); font-size: 22px; }
     .menu-modal__content > p { color: var(--muted); line-height: 1.6; }
-    .menu-modal__rating { margin: 12px 0; font-weight: 800; }
+    .menu-modal__rating { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 12px 0; font-weight: 800; }
+    .menu-modal__rating .food-status { margin-bottom: 0; }
     .menu-modal__cart-controls { display: grid; gap: 10px; margin-top: 14px; }
     .menu-modal__cart-controls label { display: grid; gap: 6px; color: var(--muted); font-weight: 800; }
     .menu-modal__cart-controls input, .menu-modal__cart-controls textarea { width: 100%; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; color: var(--ink); font: inherit; background: #fff; }
@@ -259,9 +283,15 @@ export const MenuPage = () => `
         <h2>Bo loc</h2>
         <form class="menu-controls" data-menu-form>
           <input class="menu-input" name="keyword" type="search" placeholder="Tim burger, ga ran, do uong..." autocomplete="off" />
+          <select class="menu-input" name="availability" aria-label="Trang thai ton kho">
+            <option value="">Tat ca trang thai</option>
+            <option value="available">Con hang</option>
+            <option value="out_of_stock">Het hang</option>
+          </select>
           <input class="menu-input" name="minPrice" type="number" min="0" step="1000" placeholder="Gia tu" />
           <input class="menu-input" name="maxPrice" type="number" min="0" step="1000" placeholder="Gia den" />
           <button class="button button-primary" type="submit">Tim kiem</button>
+          <button class="button button-secondary" type="button" data-clear-menu-filters>Xoa loc</button>
         </form>
         <div class="menu-sidebar__section">
           <h3>Danh muc</h3>
@@ -299,7 +329,8 @@ export const mountMenuPage = () => {
       keyword: '',
       categoryId: '',
       minPrice: '',
-      maxPrice: ''
+      maxPrice: '',
+      availability: ''
     }
   };
 
@@ -361,6 +392,21 @@ export const mountMenuPage = () => {
     state.filters.keyword = formData.get('keyword') || '';
     state.filters.minPrice = formData.get('minPrice') || '';
     state.filters.maxPrice = formData.get('maxPrice') || '';
+    state.filters.availability = formData.get('availability') || '';
+    loadFoods();
+  });
+
+
+  root.querySelector('[data-clear-menu-filters]')?.addEventListener('click', () => {
+    form.reset();
+    state.filters = {
+      keyword: '',
+      categoryId: '',
+      minPrice: '',
+      maxPrice: '',
+      availability: ''
+    };
+    categoriesRoot.innerHTML = renderCategories(state.categories, state.filters.categoryId);
     loadFoods();
   });
 

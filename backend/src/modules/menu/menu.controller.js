@@ -13,6 +13,29 @@ const parsePositiveNumber = (value) => {
 };
 
 
+const parsePositiveInteger = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+
+  const numberValue = Number(value);
+  return Number.isInteger(numberValue) && numberValue > 0 ? numberValue : null;
+};
+
+
+const normalizeAvailability = (value) => {
+  if (!value) {
+    return undefined;
+  }
+
+
+  const normalizedValue = String(value).trim().toLowerCase();
+  const allowedValues = new Set(['available', 'out_of_stock', 'all']);
+  return allowedValues.has(normalizedValue) ? normalizedValue : null;
+};
+
+
 const getCategories = async (req, res, next) => {
   try {
     const categories = await menuService.getCategories();
@@ -27,10 +50,22 @@ const getFoods = async (req, res, next) => {
   try {
     const minPrice = parsePositiveNumber(req.query.minPrice);
     const maxPrice = parsePositiveNumber(req.query.maxPrice);
+    const categoryId = parsePositiveInteger(req.query.categoryId);
+    const availability = normalizeAvailability(req.query.availability);
 
 
     if (minPrice === null || maxPrice === null) {
       return errorResponse(res, 'Gia loc khong hop le', 400);
+    }
+
+
+    if (categoryId === null) {
+      return errorResponse(res, 'Danh muc loc khong hop le', 400);
+    }
+
+
+    if (availability === null) {
+      return errorResponse(res, 'Trang thai ton kho khong hop le', 400);
     }
 
 
@@ -41,9 +76,10 @@ const getFoods = async (req, res, next) => {
 
     const foods = await menuService.getFoods({
       keyword: req.query.keyword,
-      categoryId: req.query.categoryId,
+      categoryId,
       minPrice,
-      maxPrice
+      maxPrice,
+      availability: availability === 'all' ? undefined : availability
     });
 
 
