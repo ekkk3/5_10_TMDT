@@ -45,25 +45,25 @@ const validateRequestShape = (payload = {}) => {
   const guestAddress = normalizeText(payload.guest_address);
 
   if (!guestName) {
-    errors.guest_name = 'Vui long nhap ho ten';
+    errors.guest_name = 'Vui lòng nhập họ tên';
   }
 
   if (!guestPhone) {
-    errors.guest_phone = 'Vui long nhap so dien thoai';
+    errors.guest_phone = 'Vui lòng nhập số điện thoại';
   } else if (!isValidPhone(guestPhone)) {
-    errors.guest_phone = 'So dien thoai khong dung dinh dang';
+    errors.guest_phone = 'Số điện thoại không đúng định dạng';
   }
 
   if (!guestAddress) {
-    errors.guest_address = 'Vui long nhap dia chi giao hang';
+    errors.guest_address = 'Vui lòng nhập địa chỉ giao hàng';
   }
 
   if (!Array.isArray(payload.items) || payload.items.length === 0) {
-    errors.items = 'Gio hang dang rong';
+    errors.items = 'Giỏ hàng đang rỗng';
   }
 
   if (!PAYMENT_METHODS.has(payload.payment_method)) {
-    errors.payment_method = 'Phuong thuc thanh toan khong hop le';
+    errors.payment_method = 'Phương thức thanh toán không hợp lệ';
   }
 
   return errors;
@@ -107,11 +107,11 @@ const loadAndValidateItems = async (items = []) => {
 
   normalizedItems.forEach((item) => {
     if (!Number.isInteger(item.food_id) || item.food_id <= 0) {
-      errors[`items.${item.index}.food_id`] = 'Mon an khong hop le';
+      errors[`items.${item.index}.food_id`] = 'Món ăn không hợp lệ';
     }
 
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
-      errors[`items.${item.index}.quantity`] = 'So luong mon phai lon hon 0';
+      errors[`items.${item.index}.quantity`] = 'Số lượng món phải lớn hơn 0';
     }
   });
 
@@ -132,7 +132,7 @@ const loadAndValidateItems = async (items = []) => {
   const foodMap = new Map(foods.map((food) => [Number(food.food_id), food]));
   normalizedItems.forEach((item) => {
     if (!foodMap.has(item.food_id)) {
-      errors[`items.${item.index}.food_id`] = 'Mon an khong ton tai hoac da ngung ban';
+      errors[`items.${item.index}.food_id`] = 'Món ăn không tồn tại hoặc đã ngừng bán';
     }
   });
 
@@ -151,7 +151,7 @@ const loadAndValidateItems = async (items = []) => {
       const inventory = inventoryMap.get(item.food_id);
 
       if (inventory && !Boolean(inventory.is_unlimited) && Number(inventory.quantity || 0) < item.quantity) {
-        errors[`items.${item.index}.quantity`] = 'Mon an tam het hang hoac khong du so luong';
+        errors[`items.${item.index}.quantity`] = 'Món ăn tạm hết hàng hoặc không đủ số lượng';
       }
     });
   }
@@ -185,7 +185,7 @@ const loadAndValidateItems = async (items = []) => {
       const optionRow = optionMap.get(optionId);
 
       if (!Number.isInteger(optionId) || optionId <= 0 || !optionRow || Number(optionRow.food_id) !== item.food_id) {
-        errors[`items.${item.index}.selected_options`] = 'Tuy chon mon an khong hop le';
+        errors[`items.${item.index}.selected_options`] = 'Tùy chọn món ăn không hợp lệ';
         return null;
       }
 
@@ -232,7 +232,7 @@ const getUniqueOrderCode = async (connection) => {
     }
   }
 
-  throw new Error('Khong the tao ma don hang duy nhat');
+  throw new Error('Không thể tạo mã đơn hàng duy nhất');
 };
 
 const mapStatusLog = (log, currentStatus) => ({
@@ -300,15 +300,15 @@ const buildTrackingErrors = ({ orderCode, phone }) => {
   const errors = {};
 
   if (!orderCode) {
-    errors.orderCode = 'Vui long nhap ma don';
+    errors.orderCode = 'Vui lòng nhập mã đơn';
   } else if (!isValidOrderCode(orderCode)) {
-    errors.orderCode = 'Ma don khong dung dinh dang';
+    errors.orderCode = 'Mã đơn không đúng định dạng';
   }
 
   if (!phone) {
-    errors.phone = 'Vui long nhap so dien thoai';
+    errors.phone = 'Vui lòng nhập số điện thoại';
   } else if (!isValidPhone(phone)) {
-    errors.phone = 'So dien thoai khong dung dinh dang';
+    errors.phone = 'Số điện thoại không đúng định dạng';
   }
 
   return errors;
@@ -320,7 +320,7 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
   const errors = buildTrackingErrors({ orderCode: normalizedOrderCode, phone: normalizedPhone });
 
   if (Object.keys(errors).length) {
-    return buildError(400, 'Thong tin tra cuu khong hop le', errors);
+    return buildError(400, 'Thông tin tra cứu không hợp lệ', errors);
   }
 
   const [orders] = await pool.query(
@@ -349,13 +349,13 @@ const getGuestOrderTracking = async ({ orderCode, phone } = {}) => {
   );
 
   if (!orders.length) {
-    return buildError(404, 'Khong tim thay don hang. Vui long kiem tra lai ma don hoac so dien thoai.');
+    return buildError(404, 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hoặc số điện thoại.');
   }
 
   const order = orders[0];
 
   if (normalizePhone(order.guest_phone) !== normalizedPhone) {
-    return buildError(403, 'So dien thoai khong khop voi don hang. He thong tu choi hien thi chi tiet don.');
+    return buildError(403, 'Số điện thoại không khớp với đơn hàng. Hệ thống từ chối hiển thị chi tiết đơn.');
   }
 
   const [items] = await pool.query(
@@ -482,7 +482,7 @@ const resolveVoucherDiscount = async ({ appliedVoucher, requestedDiscount, subto
 
   if (discountAmount !== requestedDiscount) {
     return {
-      error: buildError(400, 'Gia tri giam gia khong khop voi voucher hien tai')
+      error: buildError(400, 'Giá trị giảm giá không khớp với voucher hiện tại')
     };
   }
 
@@ -496,26 +496,26 @@ const createGuestOrder = async (payload = {}) => {
   const shapeErrors = validateRequestShape(payload);
 
   if (Object.keys(shapeErrors).length) {
-    return buildError(400, 'Thong tin dat hang khong hop le', shapeErrors);
+    return buildError(400, 'Thông tin đặt hàng không hợp lệ', shapeErrors);
   }
 
   const itemResult = await loadAndValidateItems(payload.items);
   if (!itemResult.ok) {
-    return buildError(400, 'Gio hang khong hop le', itemResult.errors);
+    return buildError(400, 'Giỏ hàng không hợp lệ', itemResult.errors);
   }
 
   const deliveryArea = await validateDeliveryArea(payload.guest_address);
   if (!deliveryArea) {
-    return buildError(400, 'Dia chi nam ngoai khu vuc phuc vu', {
-      guest_address: 'Hien chua ho tro giao hang tai dia chi nay'
+    return buildError(400, 'Địa chỉ nằm ngoài khu vực phục vụ', {
+      guest_address: 'Hiện chưa hỗ trợ giao hàng tại địa chỉ này'
     });
   }
 
   const subtotal = Math.round(itemResult.subtotal);
   const requestedSubtotal = toMoney(payload.subtotal);
   if (requestedSubtotal !== subtotal) {
-    return buildError(400, 'Tam tinh gio hang da thay doi. Vui long quay lai gio hang de cap nhat.', {
-      subtotal: 'Tam tinh khong khop voi du lieu mon an hien tai'
+    return buildError(400, 'Tạm tính giỏ hàng đã thay đổi. Vui lòng quay lại giỏ hàng để cập nhật.', {
+      subtotal: 'Tạm tính không khớp với dữ liệu món ăn hiện tại'
     });
   }
 
@@ -699,19 +699,19 @@ const buildGuestCancelErrors = (orderCode, payload = {}) => {
   const cancelReason = normalizeText(payload.cancel_reason);
 
   if (!normalizedOrderCode) {
-    errors.orderCode = 'Vui long nhap ma don';
+    errors.orderCode = 'Vui lòng nhập mã đơn';
   } else if (!isValidOrderCode(normalizedOrderCode)) {
-    errors.orderCode = 'Ma don khong dung dinh dang';
+    errors.orderCode = 'Mã đơn không đúng định dạng';
   }
 
   if (!phone) {
-    errors.phone = 'Vui long nhap so dien thoai';
+    errors.phone = 'Vui lòng nhập số điện thoại';
   } else if (!isValidPhone(phone)) {
-    errors.phone = 'So dien thoai khong dung dinh dang';
+    errors.phone = 'Số điện thoại không đúng định dạng';
   }
 
   if (!cancelReason) {
-    errors.cancel_reason = 'Vui long nhap ly do huy don';
+    errors.cancel_reason = 'Vui lòng nhập lý do hủy đơn';
   }
 
   return {
@@ -726,7 +726,7 @@ const cancelGuestOrder = async (orderCode, payload = {}) => {
   const { errors, normalizedOrderCode, phone, cancelReason } = buildGuestCancelErrors(orderCode, payload);
 
   if (Object.keys(errors).length) {
-    return buildError(400, 'Thong tin huy don khong hop le', errors);
+    return buildError(400, 'Thông tin hủy đơn không hợp lệ', errors);
   }
 
   const connection = await pool.getConnection();
@@ -747,24 +747,24 @@ const cancelGuestOrder = async (orderCode, payload = {}) => {
 
     if (!orders.length) {
       await connection.rollback();
-      return buildError(404, 'Khong tim thay don hang. Vui long kiem tra lai ma don hoac so dien thoai.');
+      return buildError(404, 'Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hoặc số điện thoại.');
     }
 
     const order = orders[0];
 
     if (normalizePhone(order.guest_phone) !== phone) {
       await connection.rollback();
-      return buildError(403, 'So dien thoai khong khop voi don hang. He thong tu choi thao tac huy.');
+      return buildError(403, 'Số điện thoại không khớp với đơn hàng. Hệ thống từ chối thao tác hủy.');
     }
 
     if (order.order_status === ORDER_STATUSES.CANCELLED) {
       await connection.rollback();
-      return buildError(409, 'Don hang da duoc huy truoc do', { order_status: order.order_status });
+      return buildError(409, 'Đơn hàng đã được hủy trước đó', { order_status: order.order_status });
     }
 
     if (order.order_status !== ORDER_STATUSES.PENDING) {
       await connection.rollback();
-      return buildError(409, 'Chi co the tu huy don khi don dang o trang thai PENDING', {
+      return buildError(409, 'Chỉ có thể tự hủy đơn khi đơn đang ở trạng thái PENDING', {
         order_status: order.order_status
       });
     }
@@ -807,8 +807,8 @@ const cancelGuestOrder = async (orderCode, payload = {}) => {
     await createGuestNotification(
       connection,
       order,
-      'Don hang da bi huy',
-      `Don hang ${order.order_code} da bi huy. Ly do: ${cancelReason.slice(0, 180)}`
+      'Đơn hàng đã bị hủy',
+      `Đơn hàng ${order.order_code} đã bị hủy. Lý do: ${cancelReason.slice(0, 180)}`
     );
 
     await connection.commit();

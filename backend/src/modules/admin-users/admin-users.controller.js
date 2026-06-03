@@ -9,7 +9,7 @@ const listUsers = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Lay danh sach tai khoan thanh cong', result.data);
+    return successResponse(res, 'Lấy danh sách tài khoản thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -23,7 +23,7 @@ const createUser = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Tao tai khoan nhan vien thanh cong', result.data, 201);
+    return successResponse(res, 'Tạo tài khoản nhân viên thành công', result.data, 201);
   } catch (error) {
     return next(error);
   }
@@ -37,7 +37,7 @@ const updateUser = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Cap nhat tai khoan thanh cong', result.data);
+    return successResponse(res, 'Cập nhật tài khoản thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -51,7 +51,7 @@ const lockUser = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Khoa tai khoan thanh cong', result.data);
+    return successResponse(res, 'Khóa tài khoản thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -65,7 +65,7 @@ const unlockUser = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Mo khoa tai khoan thanh cong', result.data);
+    return successResponse(res, 'Mở khóa tài khoản thành công', result.data);
   } catch (error) {
     return next(error);
   }

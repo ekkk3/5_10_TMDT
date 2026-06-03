@@ -12,6 +12,12 @@ const adminOrderRoutes = require('./modules/admin-orders/admin-orders.routes');
 const adminUserRoutes = require('./modules/admin-users/admin-users.routes');
 const kitchenRoutes = require('./modules/kitchen/kitchen.routes');
 const authRoutes = require('./modules/auth/auth.routes');
+const accountRoutes = require('./modules/account/account.routes');
+const supportRoutes = require('./modules/support/support.routes');
+const adminSupportRoutes = require('./modules/support/admin-support.routes');
+const adminOperationsRoutes = require('./modules/admin-operations/admin-operations.routes');
+const dashboardRoutes = require('./modules/admin-orders/dashboard.routes');
+const reportRoutes = require('./modules/admin-orders/report.routes');
 const { notFoundHandler } = require('./middlewares/not-found.middleware');
 const { errorHandler } = require('./middlewares/error-handler.middleware');
 
@@ -33,6 +39,12 @@ app.use('/api/admin/orders', adminOrderRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/kitchen', kitchenRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/account', accountRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/admin/support', adminSupportRoutes);
+app.use('/api/admin/operations', adminOperationsRoutes);
+app.use('/api/admin/dashboard', dashboardRoutes);
+app.use('/api/admin/reports', reportRoutes);
 
 
 app.use(express.static(path.join(__dirname, '..', '..', 'frontend', 'src')));
@@ -42,7 +54,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'src', 'index.html'));
 });
 
-app.get(['/menu', '/cart', '/checkout', '/guest-order/result', '/orders/search', '/login', '/register', '/account', '/forgot-password', '/admin/login', '/admin', '/admin/orders', '/admin/users', '/kitchen'], (req, res) => {
+app.get(['/menu', '/cart', '/checkout', '/guest-order/result', '/orders/search', '/login', '/register', '/account', '/forgot-password', '/support', '/admin/login', '/admin', '/admin/orders', '/admin/users', '/admin/operations', '/admin/reports', '/kitchen'], (req, res) => {
   res.sendFile(path.join(__dirname, '..', '..', 'frontend', 'src', 'index.html'));
 });
 

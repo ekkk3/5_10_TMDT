@@ -9,7 +9,7 @@ const listAdminOrders = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Lay danh sach don hang thanh cong', result.data);
+    return successResponse(res, 'Lấy danh sách đơn hàng thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -23,7 +23,7 @@ const getAdminOrderDetail = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Lay chi tiet don hang thanh cong', result.data);
+    return successResponse(res, 'Lấy chi tiết đơn hàng thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -37,7 +37,7 @@ const confirmAdminOrder = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Xac nhan don hang thanh cong', result.data);
+    return successResponse(res, 'Xác nhận đơn hàng thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -51,7 +51,7 @@ const cancelAdminOrder = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Huy don hang thanh cong', result.data);
+    return successResponse(res, 'Hủy đơn hàng thành công', result.data);
   } catch (error) {
     return next(error);
   }

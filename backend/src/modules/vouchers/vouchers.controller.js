@@ -12,7 +12,7 @@ const applyPublicVoucher = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode);
     }
 
-    return successResponse(res, 'Ap dung voucher thanh cong', result.data);
+    return successResponse(res, 'Áp dụng voucher thành công', result.data);
   } catch (error) {
     return next(error);
   }

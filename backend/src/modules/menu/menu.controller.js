@@ -39,7 +39,7 @@ const normalizeAvailability = (value) => {
 const getCategories = async (req, res, next) => {
   try {
     const categories = await menuService.getCategories();
-    return successResponse(res, 'Lay danh sach danh muc thanh cong', categories);
+    return successResponse(res, 'Lấy danh sách danh mục thành công', categories);
   } catch (error) {
     return next(error);
   }
@@ -55,22 +55,22 @@ const getFoods = async (req, res, next) => {
 
 
     if (minPrice === null || maxPrice === null) {
-      return errorResponse(res, 'Gia loc khong hop le', 400);
+      return errorResponse(res, 'Giá lọc không hợp lệ', 400);
     }
 
 
     if (categoryId === null) {
-      return errorResponse(res, 'Danh muc loc khong hop le', 400);
+      return errorResponse(res, 'Danh mục lọc không hợp lệ', 400);
     }
 
 
     if (availability === null) {
-      return errorResponse(res, 'Trang thai ton kho khong hop le', 400);
+      return errorResponse(res, 'Trạng thái tồn kho không hợp lệ', 400);
     }
 
 
     if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
-      return errorResponse(res, 'Gia toi thieu khong duoc lon hon gia toi da', 400);
+      return errorResponse(res, 'Giá tối thiểu không được lớn hơn giá tối đa', 400);
     }
 
 
@@ -83,7 +83,7 @@ const getFoods = async (req, res, next) => {
     });
 
 
-    return successResponse(res, 'Lay danh sach mon an thanh cong', foods);
+    return successResponse(res, 'Lấy danh sách món ăn thành công', foods);
   } catch (error) {
     return next(error);
   }
@@ -96,11 +96,11 @@ const getFoodById = async (req, res, next) => {
 
 
     if (!food) {
-      return errorResponse(res, 'Khong tim thay mon an', 404);
+      return errorResponse(res, 'Không tìm thấy món ăn', 404);
     }
 
 
-    return successResponse(res, 'Lay chi tiet mon an thanh cong', food);
+    return successResponse(res, 'Lấy chi tiết món ăn thành công', food);
   } catch (error) {
     return next(error);
   }

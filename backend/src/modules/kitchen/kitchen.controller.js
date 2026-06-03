@@ -9,7 +9,7 @@ const getPendingOrders = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Lay danh sach KDS thanh cong', result.data);
+    return successResponse(res, 'Lấy danh sách KDS thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -23,7 +23,7 @@ const markCooking = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Bep da bat dau nau don', result.data);
+    return successResponse(res, 'Bếp đã bắt đầu nấu đơn', result.data);
   } catch (error) {
     return next(error);
   }
@@ -37,7 +37,7 @@ const markReady = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Don da nau xong va cho giao', result.data);
+    return successResponse(res, 'Đơn đã nấu xong va cho giao', result.data);
   } catch (error) {
     return next(error);
   }

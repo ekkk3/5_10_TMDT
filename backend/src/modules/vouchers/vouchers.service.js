@@ -57,29 +57,29 @@ const applyPublicVoucher = async ({ code, orderTotal }) => {
   const normalizedOrderTotal = Number(orderTotal);
 
   if (!isValidVoucherCode(normalizedCode)) {
-    return buildResult(400, 'Ma voucher khong hop le');
+    return buildResult(400, 'Mã voucher không hợp lệ');
   }
 
   if (!Number.isFinite(normalizedOrderTotal) || normalizedOrderTotal < 0) {
-    return buildResult(400, 'Tong tien don hang khong hop le');
+    return buildResult(400, 'Tổng tiền đơn hàng không hợp lệ');
   }
 
   const voucher = await findVoucherByCode(normalizedCode);
 
   if (!voucher) {
-    return buildResult(404, 'Ma voucher khong ton tai');
+    return buildResult(404, 'Mã voucher không tồn tại');
   }
 
   if (voucher.target_type !== 'PUBLIC') {
-    return buildResult(403, 'Voucher chi danh cho thanh vien. Vui long dang nhap hoac dang ky de su dung.');
+    return buildResult(403, 'Voucher chỉ dành cho thành viên. Vui lòng đăng nhập hoặc đăng ký để sử dụng.');
   }
 
   if (voucher.status === 'EXPIRED') {
-    return buildResult(400, 'Voucher da het han');
+    return buildResult(400, 'Voucher đã hết hạn');
   }
 
   if (voucher.status !== 'ACTIVE') {
-    return buildResult(400, 'Voucher khong kha dung');
+    return buildResult(400, 'Voucher không khả dụng');
   }
 
   const now = new Date();
@@ -87,24 +87,24 @@ const applyPublicVoucher = async ({ code, orderTotal }) => {
   const endDate = new Date(voucher.end_date);
 
   if (now < startDate) {
-    return buildResult(400, 'Voucher chua den thoi gian su dung');
+    return buildResult(400, 'Voucher chưa đến thời gian sử dụng');
   }
 
   if (now > endDate) {
-    return buildResult(400, 'Voucher da het han');
+    return buildResult(400, 'Voucher đã hết hạn');
   }
 
   const usageLimit = voucher.usage_limit === null || voucher.usage_limit === undefined ? null : Number(voucher.usage_limit);
   const usedCount = Number(voucher.used_count || 0);
 
   if (usageLimit !== null && usedCount >= usageLimit) {
-    return buildResult(400, 'Voucher da het luot su dung');
+    return buildResult(400, 'Voucher đã hết lượt sử dụng');
   }
 
   const minOrderAmount = Number(voucher.min_order_amount || 0);
 
   if (normalizedOrderTotal < minOrderAmount) {
-    return buildResult(400, `Don hang can toi thieu ${minOrderAmount} de ap dung voucher nay`);
+    return buildResult(400, `Đơn hàng cần tối thiểu ${minOrderAmount} để áp dụng voucher này`);
   }
 
   const discountAmount = Math.round(calculateDiscountAmount(voucher, normalizedOrderTotal));

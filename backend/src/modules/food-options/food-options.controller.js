@@ -6,11 +6,11 @@ const getFoodOptionsByFoodId = async (req, res, next) => {
     const foodId = Number(req.params.foodId);
 
     if (!Number.isInteger(foodId) || foodId <= 0) {
-      return errorResponse(res, 'Ma mon an khong hop le', 400);
+      return errorResponse(res, 'Mã món ăn không hợp lệ', 400);
     }
 
     const optionGroups = await foodOptionsService.getFoodOptionsByFoodId(foodId);
-    return successResponse(res, 'Lay danh sach tuy chon mon an thanh cong', optionGroups);
+    return successResponse(res, 'Lấy danh sách tùy chọn món ăn thành công', optionGroups);
   } catch (error) {
     return next(error);
   }

@@ -52,7 +52,7 @@ const listAdminOrders = async (filters = {}) => {
 
   if (status) {
     if (!isKnownOrderStatus(status)) {
-      return buildError(400, 'Trang thai don hang khong hop le', { status: 'Trang thai khong duoc ho tro' });
+      return buildError(400, 'Trạng thái đơn hàng không hợp lệ', { status: 'Trạng thái không được hỗ trợ' });
     }
 
     where.push('o.order_status = ?');
@@ -61,7 +61,7 @@ const listAdminOrders = async (filters = {}) => {
 
   if (customerType) {
     if (!CUSTOMER_TYPES.has(customerType)) {
-      return buildError(400, 'Loai khach hang khong hop le', { customerType: 'Chi ho tro GUEST hoac MEMBER' });
+      return buildError(400, 'Loại khách hàng không hợp lệ', { customerType: 'Chỉ hỗ trợ GUEST hoặc MEMBER' });
     }
 
     where.push('o.customer_type = ?');
@@ -222,7 +222,7 @@ const getAdminOrderDetail = async (idOrCode) => {
   );
 
   if (!orders.length) {
-    return buildError(404, 'Khong tim thay don hang');
+    return buildError(404, 'Không tìm thấy đơn hàng');
   }
 
   const order = orders[0];
@@ -357,35 +357,35 @@ const confirmAdminOrder = async (idOrCode, actor = null) => {
     const order = await loadOrderForUpdate(connection, idOrCode);
     if (!order) {
       await connection.rollback();
-      return buildError(404, 'Khong tim thay don hang');
+      return buildError(404, 'Không tìm thấy đơn hàng');
     }
 
     if (order.order_status === ORDER_STATUSES.CANCELLED) {
       await connection.rollback();
-      return buildError(409, 'Khong the xac nhan don da huy');
+      return buildError(409, 'Không thể xác nhận đơn đã hủy');
     }
 
     if (order.order_status !== CONFIRMABLE_STATUS) {
       await connection.rollback();
-      return buildError(409, 'Chi co the xac nhan don dang cho xac nhan');
+      return buildError(409, 'Chỉ có thể xác nhận đơn đang chờ xác nhận');
     }
 
     if (order.payment_method !== 'COD' && order.payment_status !== 'PAID') {
       await connection.rollback();
-      return buildError(409, 'Thanh toan online chua duoc xac minh, don chua the chuyen bep', {
+      return buildError(409, 'Thanh toán online chưa được xác minh, đơn chưa thể chuyển bếp', {
         payment_status: order.payment_status
       });
     }
 
     if (!normalizeText(order.delivery_address)) {
       await connection.rollback();
-      return buildError(409, 'Don hang thieu thong tin giao hang');
+      return buildError(409, 'Đơn hàng thiếu thông tin giao hàng');
     }
 
     const unavailableItems = await findUnavailableItems(connection, order.order_id);
     if (unavailableItems.length) {
       await connection.rollback();
-      return buildError(409, 'Don hang co mon het hang, can thay mon hoac huy don', {
+      return buildError(409, 'Đơn hàng có món hết hàng, cần thay món hoặc hủy đơn', {
         unavailable_items: unavailableItems.map((item) => ({
           food_id: Number(item.food_id),
           food_name: item.food_name_snapshot,
@@ -412,8 +412,8 @@ const confirmAdminOrder = async (idOrCode, actor = null) => {
     await createNotification(
       connection,
       order,
-      'Don hang da duoc xac nhan',
-      `Don hang ${order.order_code} da duoc xac nhan va chuyen sang bep.`
+      'Đơn hàng đã được xác nhận',
+      `Đơn hàng ${order.order_code} đã được xác nhận và chuyển sang bếp.`
     );
 
     await connection.commit();
@@ -438,7 +438,7 @@ const cancelAdminOrder = async (idOrCode, payload = {}, actor = null) => {
   const cancelReason = normalizeText(payload.cancel_reason);
 
   if (!cancelReason) {
-    return buildError(400, 'Vui long nhap ly do huy don', { cancel_reason: 'Ly do huy don la bat buoc' });
+    return buildError(400, 'Vui lòng nhập lý do hủy đơn', { cancel_reason: 'Lý do hủy đơn là bắt buộc' });
   }
 
   const connection = await pool.getConnection();
@@ -449,17 +449,17 @@ const cancelAdminOrder = async (idOrCode, payload = {}, actor = null) => {
     const order = await loadOrderForUpdate(connection, idOrCode);
     if (!order) {
       await connection.rollback();
-      return buildError(404, 'Khong tim thay don hang');
+      return buildError(404, 'Không tìm thấy đơn hàng');
     }
 
     if (order.order_status === ORDER_STATUSES.COMPLETED) {
       await connection.rollback();
-      return buildError(409, 'Khong the huy don da hoan thanh');
+      return buildError(409, 'Không thể hủy đơn đã hoàn thành');
     }
 
     if (!CANCELLABLE_STATUSES.has(order.order_status)) {
       await connection.rollback();
-      return buildError(409, 'Chi co the huy don PENDING, CONFIRMED hoac COOKING');
+      return buildError(409, 'Chỉ có thể hủy đơn PENDING, CONFIRMED hoặc COOKING');
     }
 
     await connection.query('UPDATE orders SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?', [
@@ -478,8 +478,8 @@ const cancelAdminOrder = async (idOrCode, payload = {}, actor = null) => {
     await createNotification(
       connection,
       order,
-      'Don hang da bi huy',
-      `Don hang ${order.order_code} da bi huy. Ly do: ${cancelReason.slice(0, 180)}`
+      'Đơn hàng đã bị hủy',
+      `Đơn hàng ${order.order_code} đã bị hủy. Lý do: ${cancelReason.slice(0, 180)}`
     );
 
     await connection.commit();

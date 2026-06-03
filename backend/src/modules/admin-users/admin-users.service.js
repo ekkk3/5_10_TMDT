@@ -47,7 +47,7 @@ const listUsers = async (filters = {}) => {
 
   if (status) {
     if (!USER_STATUSES.has(status)) {
-      return buildError(400, 'Trang thai tai khoan khong hop le', { status: 'Trang thai khong duoc ho tro' });
+      return buildError(400, 'Trạng thái tài khoản không hợp lệ', { status: 'Trạng thái không được hỗ trợ' });
     }
 
     where.push('u.status = ?');
@@ -113,41 +113,41 @@ const validateUserPayload = async (payload = {}, { partial = false } = {}) => {
   const password = String(payload.password || '');
 
   if (!partial || Object.prototype.hasOwnProperty.call(payload, 'full_name')) {
-    if (!fullName) errors.full_name = 'Vui long nhap ho ten';
-    else if (fullName.length > 100) errors.full_name = 'Ho ten khong duoc vuot qua 100 ky tu';
+    if (!fullName) errors.full_name = 'Vui lòng nhập họ tên';
+    else if (fullName.length > 100) errors.full_name = 'Họ tên không được vượt quá 100 ký tự';
   }
 
   if (!partial || Object.prototype.hasOwnProperty.call(payload, 'email')) {
-    if (email && !isValidEmail(email)) errors.email = 'Email khong dung dinh dang';
+    if (email && !isValidEmail(email)) errors.email = 'Email không đúng định dạng';
   }
 
   if (!partial || Object.prototype.hasOwnProperty.call(payload, 'phone')) {
-    if (phone && !isValidPhone(phone)) errors.phone = 'So dien thoai khong dung dinh dang';
+    if (phone && !isValidPhone(phone)) errors.phone = 'Số điện thoại không đúng định dạng';
   }
 
   if (!partial && !email && !phone) {
-    errors.contact = 'Vui long nhap email hoac so dien thoai';
+    errors.contact = 'Vui lòng nhập email hoặc số điện thoại';
   }
 
   if (!partial || Object.prototype.hasOwnProperty.call(payload, 'role_name')) {
     if (!INTERNAL_ROLES.has(roleName)) {
-      errors.role_name = 'Chi duoc gan vai tro nhan vien noi bo';
+      errors.role_name = 'Chỉ được gán vai trò nhân viên nội bộ';
     }
   }
 
   if (!partial || Object.prototype.hasOwnProperty.call(payload, 'status')) {
     if (!USER_STATUSES.has(status)) {
-      errors.status = 'Trang thai tai khoan khong hop le';
+      errors.status = 'Trạng thái tài khoản không hợp lệ';
     }
   }
 
   if (!partial && password.length < 8) {
-    errors.password = 'Mat khau toi thieu 8 ky tu';
+    errors.password = 'Mật khẩu tối thiểu 8 ký tự';
   }
 
   const role = roleName && INTERNAL_ROLES.has(roleName) ? await getRoleByName(roleName) : null;
   if (roleName && INTERNAL_ROLES.has(roleName) && !role) {
-    errors.role_name = 'He thong chua cau hinh vai tro nay';
+    errors.role_name = 'Hệ thống chưa cấu hình vai trò này';
   }
 
   return {
@@ -219,13 +219,13 @@ const createUser = async (payload = {}, actor = null) => {
   const { errors, values } = await validateUserPayload(payload);
 
   if (Object.keys(errors).length) {
-    return buildError(400, 'Thong tin tai khoan khong hop le', errors);
+    return buildError(400, 'Thông tin tài khoản không hợp lệ', errors);
   }
 
   const duplicate = await ensureUniqueContact({ email: values.email, phone: values.phone });
   if (duplicate) {
-    return buildError(409, 'Email hoac so dien thoai da duoc su dung', {
-      contact: 'Thong tin lien he bi trung'
+    return buildError(409, 'Email hoặc số điện thoại đã được sử dụng', {
+      contact: 'Thông tin liên hệ bị trùng'
     });
   }
 
@@ -280,12 +280,12 @@ const getUserForUpdate = async (connection, userId) => {
 const updateUser = async (userId, payload = {}, actor = null) => {
   const normalizedUserId = Number.parseInt(userId, 10);
   if (!Number.isInteger(normalizedUserId) || normalizedUserId <= 0) {
-    return buildError(400, 'Tai khoan khong hop le', { user_id: 'ID tai khoan khong hop le' });
+    return buildError(400, 'Tài khoản không hợp lệ', { user_id: 'ID tài khoản không hợp lệ' });
   }
 
   const { errors, values } = await validateUserPayload(payload, { partial: true });
   if (Object.keys(errors).length) {
-    return buildError(400, 'Thong tin tai khoan khong hop le', errors);
+    return buildError(400, 'Thông tin tài khoản không hợp lệ', errors);
   }
 
   const duplicate = await ensureUniqueContact({
@@ -295,8 +295,8 @@ const updateUser = async (userId, payload = {}, actor = null) => {
   });
 
   if (duplicate) {
-    return buildError(409, 'Email hoac so dien thoai da duoc su dung', {
-      contact: 'Thong tin lien he bi trung'
+    return buildError(409, 'Email hoặc số điện thoại đã được sử dụng', {
+      contact: 'Thông tin liên hệ bị trùng'
     });
   }
 
@@ -308,7 +308,7 @@ const updateUser = async (userId, payload = {}, actor = null) => {
     const user = await getUserForUpdate(connection, normalizedUserId);
     if (!user) {
       await connection.rollback();
-      return buildError(404, 'Khong tim thay tai khoan');
+      return buildError(404, 'Không tìm thấy tài khoản');
     }
 
     const nextRole = values.role || { role_id: user.role_id, role_name: user.role_name };
@@ -318,7 +318,7 @@ const updateUser = async (userId, payload = {}, actor = null) => {
       const activeAdmins = await countActiveAdmins(connection);
       if (activeAdmins <= 1) {
         await connection.rollback();
-        return buildError(409, 'Khong the khoa admin cuoi cung dang hoat dong');
+        return buildError(409, 'Không thể khóa admin cuối cùng đang hoạt động');
       }
     }
 
@@ -326,7 +326,7 @@ const updateUser = async (userId, payload = {}, actor = null) => {
       const activeAdmins = await countActiveAdmins(connection);
       if (user.status === 'ACTIVE' && activeAdmins <= 1) {
         await connection.rollback();
-        return buildError(409, 'Khong the go vai tro quan tri cua admin cuoi cung');
+        return buildError(409, 'Không thể gỡ vai trò quản trị của admin cuối cùng');
       }
     }
 
@@ -361,7 +361,7 @@ const updateUser = async (userId, payload = {}, actor = null) => {
     if (String(payload.password || '')) {
       if (String(payload.password).length < 8) {
         await connection.rollback();
-        return buildError(400, 'Mat khau toi thieu 8 ky tu', { password: 'Mat khau toi thieu 8 ky tu' });
+        return buildError(400, 'Mật khẩu tối thiểu 8 ký tự', { password: 'Mật khẩu tối thiểu 8 ký tự' });
       }
       updates.push('password_hash = ?');
       params.push(await bcrypt.hash(String(payload.password), 10));
@@ -369,7 +369,7 @@ const updateUser = async (userId, payload = {}, actor = null) => {
 
     if (!updates.length) {
       await connection.rollback();
-      return buildError(400, 'Khong co thong tin can cap nhat');
+      return buildError(400, 'Không có thông tin cần cập nhật');
     }
 
     updates.push('updated_at = CURRENT_TIMESTAMP');

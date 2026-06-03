@@ -12,7 +12,7 @@ const login = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Dang nhap thanh cong', result.data);
+    return successResponse(res, 'Đăng nhập thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -28,7 +28,7 @@ const requestLoginOtp = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Da gui ma OTP dang nhap', result.data);
+    return successResponse(res, 'Đã gửi mã OTP đăng nhập', result.data);
   } catch (error) {
     return next(error);
   }
@@ -45,7 +45,7 @@ const verifyLoginOtp = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Dang nhap thanh cong', result.data);
+    return successResponse(res, 'Đăng nhập thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -62,7 +62,7 @@ const loginAdmin = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Dang nhap quan tri thanh cong', result.data);
+    return successResponse(res, 'Đăng nhập quản trị thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -78,7 +78,7 @@ const requestAdminLoginOtp = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Da gui ma OTP dang nhap quan tri', result.data);
+    return successResponse(res, 'Đã gửi mã OTP đăng nhập quản trị', result.data);
   } catch (error) {
     return next(error);
   }
@@ -95,7 +95,7 @@ const verifyAdminLoginOtp = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Dang nhap quan tri thanh cong', result.data);
+    return successResponse(res, 'Đăng nhập quản trị thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -109,7 +109,7 @@ const getCurrentUser = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Lay phien dang nhap thanh cong', result.data);
+    return successResponse(res, 'Lấy phiên đăng nhập thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -123,7 +123,7 @@ const getCurrentAdminUser = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Lay phien quan tri thanh cong', result.data);
+    return successResponse(res, 'Lấy phiên quản trị thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -133,7 +133,7 @@ const logout = async (req, res, next) => {
   try {
     const result = await authService.logout();
 
-    return successResponse(res, 'Dang xuat thanh cong', result.data);
+    return successResponse(res, 'Đăng xuất thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -147,7 +147,7 @@ const requestRegistration = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Da gui ma xac thuc dang ky', result.data, 201);
+    return successResponse(res, 'Đã gửi mã xác thực đăng ký', result.data, 201);
   } catch (error) {
     return next(error);
   }
@@ -163,7 +163,7 @@ const resendRegistrationOtp = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Da gui lai ma xac thuc', result.data);
+    return successResponse(res, 'Đã gửi lại mã xác thực', result.data);
   } catch (error) {
     return next(error);
   }
@@ -180,7 +180,41 @@ const verifyRegistration = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Dang ky tai khoan thanh cong', result.data, 201);
+    return successResponse(res, 'Đăng ký tài khoản thành công', result.data, 201);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const requestPasswordReset = async (req, res, next) => {
+  try {
+    const result = await authService.requestPasswordReset({
+      identifier: req.body.identifier
+    });
+
+    if (!result.ok) {
+      return errorResponse(res, result.message, result.statusCode, result.errors || null);
+    }
+
+    return successResponse(res, 'Đã gửi mã OTP khôi phục mật khẩu', result.data);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const result = await authService.resetPassword({
+      verificationToken: req.body.verification_token,
+      otp: req.body.otp,
+      password: req.body.password
+    });
+
+    if (!result.ok) {
+      return errorResponse(res, result.message, result.statusCode, result.errors || null);
+    }
+
+    return successResponse(res, 'Cập nhật mật khẩu thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -198,5 +232,7 @@ module.exports = {
   logout,
   requestRegistration,
   resendRegistrationOtp,
-  verifyRegistration
+  verifyRegistration,
+  requestPasswordReset,
+  resetPassword
 };

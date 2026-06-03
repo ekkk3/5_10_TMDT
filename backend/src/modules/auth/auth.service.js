@@ -13,6 +13,7 @@ const TEMP_LOCK_TTL_MS = 10 * 60 * 1000;
 const pendingRegistrations = new Map();
 const pendingLoginOtps = new Map();
 const pendingAdminLoginOtps = new Map();
+const pendingPasswordResets = new Map();
 const failedAdminLoginAttempts = new Map();
 
 const INTERNAL_ROLE_ACCESS = {
@@ -60,11 +61,11 @@ const validatePasswordStrength = (password) => {
   const value = String(password || '');
   const errors = [];
 
-  if (value.length < 8) errors.push('Mat khau toi thieu 8 ky tu');
-  if (!/[a-z]/.test(value)) errors.push('Mat khau can co chu thuong');
-  if (!/[A-Z]/.test(value)) errors.push('Mat khau can co chu hoa');
-  if (!/\d/.test(value)) errors.push('Mat khau can co chu so');
-  if (!/[^A-Za-z0-9]/.test(value)) errors.push('Mat khau can co ky tu dac biet');
+  if (value.length < 8) errors.push('Mật khẩu tối thiểu 8 ký tự');
+  if (!/[a-z]/.test(value)) errors.push('Mật khẩu cần có chữ thường');
+  if (!/[A-Z]/.test(value)) errors.push('Mật khẩu cần có chữ hoa');
+  if (!/\d/.test(value)) errors.push('Mật khẩu cần có chữ số');
+  if (!/[^A-Za-z0-9]/.test(value)) errors.push('Mật khẩu cần có ký tự đặc biệt');
 
   return errors;
 };
@@ -87,15 +88,15 @@ const normalizeIdentifier = (identifier) => {
 
 const validateIdentifier = (identifier) => {
   if (!identifier.value) {
-    return 'Vui long nhap email hoac so dien thoai';
+    return 'Vui lòng nhập email hoặc số điện thoại';
   }
 
   if (identifier.type === 'email' && !isValidEmail(identifier.value)) {
-    return 'Email khong dung dinh dang';
+    return 'Email không đúng định dạng';
   }
 
   if (identifier.type === 'phone' && !isValidPhone(identifier.value)) {
-    return 'So dien thoai khong dung dinh dang';
+    return 'Số điện thoại không đúng định dạng';
   }
 
   return null;
@@ -109,21 +110,21 @@ const validateRegistrationPayload = (payload = {}) => {
   const errors = {};
 
   if (!fullName) {
-    errors.full_name = 'Vui long nhap ho ten';
+    errors.full_name = 'Vui lòng nhập họ tên';
   } else if (fullName.length > 100) {
-    errors.full_name = 'Ho ten khong duoc vuot qua 100 ky tu';
+    errors.full_name = 'Họ tên không được vượt quá 100 ký tự';
   }
 
   if (!email && !phone) {
-    errors.contact = 'Vui long nhap email hoac so dien thoai';
+    errors.contact = 'Vui lòng nhập email hoặc số điện thoại';
   }
 
   if (email && !isValidEmail(email)) {
-    errors.email = 'Email khong dung dinh dang';
+    errors.email = 'Email không đúng định dạng';
   }
 
   if (phone && !isValidPhone(phone)) {
-    errors.phone = 'So dien thoai khong dung dinh dang';
+    errors.phone = 'Số điện thoại không đúng định dạng';
   }
 
   const passwordErrors = validatePasswordStrength(password);
@@ -247,15 +248,15 @@ const toPublicAccount = (account) => ({
 
 const validateAccountCanLogin = (account) => {
   if (!account) {
-    return buildResult(401, 'Email/so dien thoai hoac thong tin xac thuc khong dung');
+    return buildResult(401, 'Email/số điện thoại hoặc thông tin xác thực không đúng');
   }
 
   if (account.status === 'LOCKED') {
-    return buildResult(423, 'Tai khoan bi khoa. Vui long lien he CSKH de duoc ho tro.');
+    return buildResult(423, 'Tài khoản bị khóa. Vui lòng liên hệ CSKH để được hỗ trợ.');
   }
 
   if (account.status !== 'ACTIVE') {
-    return buildResult(403, 'Tai khoan chua san sang dang nhap');
+    return buildResult(403, 'Tài khoản chưa sẵn sàng đăng nhập');
   }
 
   return null;
@@ -303,7 +304,7 @@ const createAdminSession = (account, access) => {
 const getInternalAccess = (account) => INTERNAL_ROLE_ACCESS[String(account?.role_name || '').toUpperCase()] || null;
 
 const buildUnauthorizedAdminResult = () =>
-  buildResult(403, 'Tai khoan chua duoc phan quyen truy cap he thong quan tri');
+  buildResult(403, 'Tài khoản chưa được phân quyền truy cập hệ thống quản trị');
 
 const validateAccountCanAdminLogin = (account) => {
   const accountError = validateAccountCanLogin(account);
@@ -343,6 +344,12 @@ const cleanupExpiredLoginOtps = () => {
       pendingAdminLoginOtps.delete(token);
     }
   }
+
+  for (const [token, resetOtp] of pendingPasswordResets.entries()) {
+    if (resetOtp.expiresAt <= now) {
+      pendingPasswordResets.delete(token);
+    }
+  }
 };
 
 const createOtp = () => String(crypto.randomInt(100000, 1000000));
@@ -372,11 +379,11 @@ const recordFailedAdminLogin = (identifier) => {
   failedAdminLoginAttempts.set(key, { count, lockedUntil });
 
   if (lockedUntil) {
-    return buildResult(423, 'Tai khoan tam thoi bi khoa do dang nhap sai nhieu lan. Vui long thu lai sau 10 phut.');
+    return buildResult(423, 'Tài khoản tạm thời bị khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau 10 phút.');
   }
 
-  return buildResult(401, 'Tai khoan hoac thong tin xac thuc khong dung', {
-    credentials: 'Thong tin dang nhap khong dung'
+  return buildResult(401, 'Tài khoản hoặc thông tin xác thực không đúng', {
+    credentials: 'Thông tin đăng nhập không đúng'
   });
 };
 
@@ -393,11 +400,11 @@ const loginWithPassword = async ({ identifier, password }) => {
   const identifierError = validateIdentifier(normalizedIdentifier);
 
   if (identifierError) {
-    return buildResult(400, 'Thong tin dang nhap khong hop le', { identifier: identifierError });
+    return buildResult(400, 'Thông tin đăng nhập không hợp lệ', { identifier: identifierError });
   }
 
   if (!String(password || '')) {
-    return buildResult(400, 'Thong tin dang nhap khong hop le', { password: 'Vui long nhap mat khau' });
+    return buildResult(400, 'Thông tin đăng nhập không hợp lệ', { password: 'Vui lòng nhập mật khẩu' });
   }
 
   const account = await findAccountByIdentifier(normalizedIdentifier);
@@ -408,8 +415,8 @@ const loginWithPassword = async ({ identifier, password }) => {
   const isPasswordValid = await bcrypt.compare(String(password), account.password_hash || '');
 
   if (!isPasswordValid) {
-    return buildResult(401, 'Email/so dien thoai hoac mat khau khong dung', {
-      password: 'Mat khau khong dung'
+    return buildResult(401, 'Email/số điện thoại hoặc mật khẩu không đúng', {
+      password: 'Mật khẩu không đúng'
     });
   }
 
@@ -424,17 +431,17 @@ const loginAdminWithPassword = async ({ identifier, password }) => {
   const identifierError = validateIdentifier(normalizedIdentifier);
 
   if (identifierError) {
-    return buildResult(400, 'Thong tin dang nhap quan tri khong hop le', { identifier: identifierError });
+    return buildResult(400, 'Thông tin đăng nhập quản trị không hợp lệ', { identifier: identifierError });
   }
 
   const activeLock = getActiveAdminLock(normalizedIdentifier);
 
   if (activeLock) {
-    return buildResult(423, 'Tai khoan tam thoi bi khoa do dang nhap sai nhieu lan. Vui long thu lai sau 10 phut.');
+    return buildResult(423, 'Tài khoản tạm thời bị khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau 10 phút.');
   }
 
   if (!String(password || '')) {
-    return buildResult(400, 'Thong tin dang nhap quan tri khong hop le', { password: 'Vui long nhap mat khau' });
+    return buildResult(400, 'Thông tin đăng nhập quản trị không hợp lệ', { password: 'Vui lòng nhập mật khẩu' });
   }
 
   const account = await findAccountByIdentifier(normalizedIdentifier);
@@ -471,13 +478,13 @@ const requestAdminLoginOtp = async ({ identifier }) => {
   const identifierError = validateIdentifier(normalizedIdentifier);
 
   if (identifierError) {
-    return buildResult(400, 'Thong tin dang nhap quan tri khong hop le', { identifier: identifierError });
+    return buildResult(400, 'Thông tin đăng nhập quản trị không hợp lệ', { identifier: identifierError });
   }
 
   const activeLock = getActiveAdminLock(normalizedIdentifier);
 
   if (activeLock) {
-    return buildResult(423, 'Tai khoan tam thoi bi khoa do dang nhap sai nhieu lan. Vui long thu lai sau 10 phut.');
+    return buildResult(423, 'Tài khoản tạm thời bị khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau 10 phút.');
   }
 
   const account = await findAccountByIdentifier(normalizedIdentifier);
@@ -494,7 +501,7 @@ const requestAdminLoginOtp = async ({ identifier }) => {
   const receiver = normalizedIdentifier.type === 'email' ? account.email : account.phone;
 
   if (!receiver) {
-    return buildResult(400, 'Tai khoan chua co kenh nhan OTP phu hop');
+    return buildResult(400, 'Tài khoản chưa có kênh nhận OTP phù hợp');
   }
 
   const code = createOtp();
@@ -538,16 +545,16 @@ const verifyAdminLoginOtp = async ({ verificationToken, otp }) => {
   const loginOtp = pendingAdminLoginOtps.get(token);
 
   if (!loginOtp) {
-    return buildResult(400, 'OTP sai hoac da het han. Vui long gui lai ma.');
+    return buildResult(400, 'OTP sai hoặc đã hết hạn. Vui lòng gửi lại mã.');
   }
 
   if (!/^\d{6}$/.test(code)) {
-    return buildResult(400, 'Ma OTP gom 6 chu so', { otp: 'Ma OTP gom 6 chu so' });
+    return buildResult(400, 'Mã OTP gồm 6 chữ số', { otp: 'Mã OTP gồm 6 chữ số' });
   }
 
   if (loginOtp.expiresAt <= Date.now()) {
     pendingAdminLoginOtps.delete(token);
-    return buildResult(400, 'OTP da het han. Vui long gui lai ma.');
+    return buildResult(400, 'OTP đã hết hạn. Vui lòng gửi lại mã.');
   }
 
   if (loginOtp.code !== code) {
@@ -556,11 +563,11 @@ const verifyAdminLoginOtp = async ({ verificationToken, otp }) => {
     if (loginOtp.attempts >= MAX_VERIFY_ATTEMPTS) {
       pendingAdminLoginOtps.delete(token);
       recordFailedAdminLogin(loginOtp.identifier);
-      return buildResult(400, 'OTP sai qua so lan cho phep. Vui long dang nhap lai.');
+      return buildResult(400, 'OTP sai quá số lần cho phép. Vui lòng đăng nhập lại.');
     }
 
     pendingAdminLoginOtps.set(token, loginOtp);
-    return buildResult(400, 'OTP khong dung. Vui long kiem tra lai.', { otp: 'OTP khong dung' });
+    return buildResult(400, 'OTP không đúng. Vui lòng kiểm tra lại.', { otp: 'OTP không đúng' });
   }
 
   const account = await findAccountById(loginOtp.userId);
@@ -589,7 +596,7 @@ const requestLoginOtp = async ({ identifier }) => {
   const identifierError = validateIdentifier(normalizedIdentifier);
 
   if (identifierError) {
-    return buildResult(400, 'Thong tin dang nhap khong hop le', { identifier: identifierError });
+    return buildResult(400, 'Thông tin đăng nhập không hợp lệ', { identifier: identifierError });
   }
 
   const account = await findAccountByIdentifier(normalizedIdentifier);
@@ -600,7 +607,7 @@ const requestLoginOtp = async ({ identifier }) => {
   const receiver = normalizedIdentifier.type === 'email' ? account.email : account.phone;
 
   if (!receiver) {
-    return buildResult(400, 'Tai khoan chua co kenh nhan OTP phu hop');
+    return buildResult(400, 'Tài khoản chưa có kênh nhận OTP phù hợp');
   }
 
   const code = createOtp();
@@ -643,16 +650,16 @@ const verifyLoginOtp = async ({ verificationToken, otp }) => {
   const loginOtp = pendingLoginOtps.get(token);
 
   if (!loginOtp) {
-    return buildResult(400, 'OTP sai hoac da het han. Vui long gui lai ma.');
+    return buildResult(400, 'OTP sai hoặc đã hết hạn. Vui lòng gửi lại mã.');
   }
 
   if (!/^\d{6}$/.test(code)) {
-    return buildResult(400, 'Ma OTP gom 6 chu so', { otp: 'Ma OTP gom 6 chu so' });
+    return buildResult(400, 'Mã OTP gồm 6 chữ số', { otp: 'Mã OTP gồm 6 chữ số' });
   }
 
   if (loginOtp.expiresAt <= Date.now()) {
     pendingLoginOtps.delete(token);
-    return buildResult(400, 'OTP da het han. Vui long gui lai ma.');
+    return buildResult(400, 'OTP đã hết hạn. Vui lòng gửi lại mã.');
   }
 
   if (loginOtp.code !== code) {
@@ -660,11 +667,11 @@ const verifyLoginOtp = async ({ verificationToken, otp }) => {
 
     if (loginOtp.attempts >= MAX_VERIFY_ATTEMPTS) {
       pendingLoginOtps.delete(token);
-      return buildResult(400, 'OTP sai qua so lan cho phep. Vui long dang nhap lai.');
+      return buildResult(400, 'OTP sai quá số lần cho phép. Vui lòng đăng nhập lại.');
     }
 
     pendingLoginOtps.set(token, loginOtp);
-    return buildResult(400, 'OTP khong dung. Vui long kiem tra lai.', { otp: 'OTP khong dung' });
+    return buildResult(400, 'OTP không đúng. Vui lòng kiểm tra lại.', { otp: 'OTP không đúng' });
   }
 
   const account = await findAccountById(loginOtp.userId);
@@ -687,7 +694,7 @@ const getCurrentUser = async (authorizationHeader) => {
   const [scheme, token] = String(authorizationHeader || '').split(' ');
 
   if (scheme !== 'Bearer' || !token) {
-    return buildResult(401, 'Phien dang nhap da het han. Vui long dang nhap lai.');
+    return buildResult(401, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
   }
 
   try {
@@ -702,7 +709,7 @@ const getCurrentUser = async (authorizationHeader) => {
       data: toPublicAccount(account)
     };
   } catch (error) {
-    return buildResult(401, 'Phien dang nhap da het han. Vui long dang nhap lai.');
+    return buildResult(401, 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
   }
 };
 
@@ -710,7 +717,7 @@ const getCurrentAdminUser = async (authorizationHeader) => {
   const [scheme, token] = String(authorizationHeader || '').split(' ');
 
   if (scheme !== 'Bearer' || !token) {
-    return buildResult(401, 'Phien dang nhap quan tri da het han. Vui long dang nhap lai.');
+    return buildResult(401, 'Phiên đăng nhập quản trị đã hết hạn. Vui lòng đăng nhập lại.');
   }
 
   try {
@@ -736,7 +743,7 @@ const getCurrentAdminUser = async (authorizationHeader) => {
       }
     };
   } catch (error) {
-    return buildResult(401, 'Phien dang nhap quan tri da het han. Vui long dang nhap lai.');
+    return buildResult(401, 'Phiên đăng nhập quản trị đã hết hạn. Vui lòng đăng nhập lại.');
   }
 };
 
@@ -753,14 +760,14 @@ const startRegistration = async (payload) => {
   const { errors, values } = validateRegistrationPayload(payload);
 
   if (Object.keys(errors).length) {
-    return buildResult(400, 'Thong tin dang ky khong hop le', errors);
+    return buildResult(400, 'Thông tin đăng ký không hợp lệ', errors);
   }
 
   const existingAccount = await findExistingAccount(values);
 
   if (existingAccount) {
-    return buildResult(409, 'Tai khoan da ton tai. Vui long dang nhap hoac lay lai mat khau.', {
-      account: 'Email hoac so dien thoai da duoc su dung'
+    return buildResult(409, 'Tài khoản đã tồn tại. Vui lòng đăng nhập hoặc lấy lại mật khẩu.', {
+      account: 'Email hoặc số điện thoại đã được sử dụng'
     });
   }
 
@@ -805,7 +812,7 @@ const resendRegistrationOtp = async ({ verificationToken }) => {
   const registration = pendingRegistrations.get(token);
 
   if (!registration) {
-    return buildResult(400, 'Phien dang ky khong ton tai hoac da het han');
+    return buildResult(400, 'Phiên đăng ký không tồn tại hoặc đã hết hạn');
   }
 
   const code = createOtp();
@@ -845,16 +852,16 @@ const verifyRegistration = async ({ verificationToken, otp }) => {
   const registration = pendingRegistrations.get(token);
 
   if (!registration) {
-    return buildResult(400, 'OTP sai hoac da het han. Vui long gui lai ma.');
+    return buildResult(400, 'OTP sai hoặc đã hết hạn. Vui lòng gửi lại mã.');
   }
 
   if (!/^\d{6}$/.test(code)) {
-    return buildResult(400, 'Ma OTP gom 6 chu so', { otp: 'Ma OTP gom 6 chu so' });
+    return buildResult(400, 'Mã OTP gồm 6 chữ số', { otp: 'Mã OTP gồm 6 chữ số' });
   }
 
   if (registration.expiresAt <= Date.now()) {
     pendingRegistrations.delete(token);
-    return buildResult(400, 'OTP da het han. Vui long gui lai ma.');
+    return buildResult(400, 'OTP đã hết hạn. Vui lòng gửi lại mã.');
   }
 
   if (registration.code !== code) {
@@ -862,26 +869,26 @@ const verifyRegistration = async ({ verificationToken, otp }) => {
 
     if (registration.attempts >= MAX_VERIFY_ATTEMPTS) {
       pendingRegistrations.delete(token);
-      return buildResult(400, 'OTP sai qua so lan cho phep. Vui long dang ky lai.');
+      return buildResult(400, 'OTP sai quá số lần cho phép. Vui lòng đăng ký lại.');
     }
 
     pendingRegistrations.set(token, registration);
-    return buildResult(400, 'OTP khong dung. Vui long kiem tra lai.', { otp: 'OTP khong dung' });
+    return buildResult(400, 'OTP không đúng. Vui lòng kiểm tra lại.', { otp: 'OTP không đúng' });
   }
 
   const existingAccount = await findExistingAccount(registration);
 
   if (existingAccount) {
     pendingRegistrations.delete(token);
-    return buildResult(409, 'Tai khoan da ton tai. Vui long dang nhap hoac lay lai mat khau.', {
-      account: 'Email hoac so dien thoai da duoc su dung'
+    return buildResult(409, 'Tài khoản đã tồn tại. Vui lòng đăng nhập hoặc lấy lại mật khẩu.', {
+      account: 'Email hoặc số điện thoại đã được sử dụng'
     });
   }
 
   const roleId = await getCustomerRoleId();
 
   if (!roleId) {
-    return buildResult(500, 'He thong chua cau hinh vai tro CUSTOMER');
+    return buildResult(500, 'Hệ thống chưa cấu hình vai trò CUSTOMER');
   }
 
   const passwordHash = await bcrypt.hash(registration.password, 10);
@@ -907,6 +914,111 @@ const verifyRegistration = async ({ verificationToken, otp }) => {
   };
 };
 
+const requestPasswordReset = async ({ identifier }) => {
+  cleanupExpiredLoginOtps();
+
+  const normalizedIdentifier = normalizeIdentifier(identifier);
+  const identifierError = validateIdentifier(normalizedIdentifier);
+
+  if (identifierError) {
+    return buildResult(400, 'Thông tin khôi phục mật khẩu không hợp lệ', { identifier: identifierError });
+  }
+
+  const account = await findAccountByIdentifier(normalizedIdentifier);
+  const accountError = validateAccountCanLogin(account);
+
+  if (accountError) return accountError;
+
+  const receiver = normalizedIdentifier.type === 'email' ? account.email : account.phone;
+  if (!receiver) {
+    return buildResult(400, 'Tài khoản chưa có kênh nhận OTP phù hợp');
+  }
+
+  const code = createOtp();
+  const token = crypto.randomBytes(24).toString('hex');
+  const channel = normalizedIdentifier.type === 'email' ? 'EMAIL' : 'SMS';
+
+  pendingPasswordResets.set(token, {
+    userId: account.user_id,
+    code,
+    channel,
+    receiver,
+    expiresAt: Date.now() + OTP_TTL_MS,
+    attempts: 0
+  });
+
+  await otpEmailService.sendVerificationCode({ channel, receiver, code });
+
+  const data = {
+    verification_token: token,
+    channel,
+    receiver: otpEmailService.maskReceiver(receiver),
+    expires_in_seconds: Math.floor(OTP_TTL_MS / 1000)
+  };
+
+  if (env.nodeEnv !== 'production') {
+    data.dev_otp = code;
+  }
+
+  return {
+    ok: true,
+    data
+  };
+};
+
+const resetPassword = async ({ verificationToken, otp, password }) => {
+  cleanupExpiredLoginOtps();
+
+  const token = String(verificationToken || '').trim();
+  const code = String(otp || '').trim();
+  const resetOtp = pendingPasswordResets.get(token);
+
+  if (!resetOtp) {
+    return buildResult(400, 'OTP sai hoặc đã hết hạn. Vui lòng gửi lại mã.');
+  }
+
+  if (!/^\d{6}$/.test(code)) {
+    return buildResult(400, 'Mã OTP gồm 6 chữ số', { otp: 'Mã OTP gồm 6 chữ số' });
+  }
+
+  if (resetOtp.expiresAt <= Date.now()) {
+    pendingPasswordResets.delete(token);
+    return buildResult(400, 'OTP đã hết hạn. Vui lòng gửi lại mã.');
+  }
+
+  if (resetOtp.code !== code) {
+    resetOtp.attempts += 1;
+
+    if (resetOtp.attempts >= MAX_VERIFY_ATTEMPTS) {
+      pendingPasswordResets.delete(token);
+      return buildResult(400, 'OTP sai quá số lần cho phép. Vui lòng thực hiện lại.');
+    }
+
+    pendingPasswordResets.set(token, resetOtp);
+    return buildResult(400, 'OTP không đúng. Vui lòng kiểm tra lại.', { otp: 'OTP không đúng' });
+  }
+
+  const passwordErrors = validatePasswordStrength(password);
+  if (passwordErrors.length) {
+    return buildResult(400, 'Mật khẩu mới không đạt yêu cầu', { password: passwordErrors.join('. ') });
+  }
+
+  const passwordHash = await bcrypt.hash(String(password), 10);
+  await pool.query('UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', [
+    passwordHash,
+    resetOtp.userId
+  ]);
+
+  pendingPasswordResets.delete(token);
+
+  return {
+    ok: true,
+    data: {
+      password_reset: true
+    }
+  };
+};
+
 module.exports = {
   loginWithPassword,
   requestLoginOtp,
@@ -919,5 +1031,7 @@ module.exports = {
   logout,
   startRegistration,
   resendRegistrationOtp,
-  verifyRegistration
+  verifyRegistration,
+  requestPasswordReset,
+  resetPassword
 };

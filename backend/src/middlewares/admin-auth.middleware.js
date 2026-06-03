@@ -23,7 +23,7 @@ const requirePermission = (permission) => (req, res, next) => {
   }
 
   if (!req.adminPermissions?.includes(permission)) {
-    return errorResponse(res, 'Tai khoan khong du quyen thuc hien chuc nang nay', 403, {
+    return errorResponse(res, 'Tài khoản không đủ quyền thực hiện chức năng này', 403, {
       permission
     });
   }

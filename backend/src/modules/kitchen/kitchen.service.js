@@ -213,12 +213,12 @@ const loadOrderForUpdate = async (connection, idOrCode) => {
 const sendNotification = async (connection, order, nextStatus) => {
   const adminMessage =
     nextStatus === ORDER_STATUSES.COOKING
-      ? `Bep bat dau nau don ${order.order_code}`
-      : `Don ${order.order_code} da nau xong`;
+      ? `Bếp bắt đầu nấu đơn ${order.order_code}`
+      : `Đơn ${order.order_code} đã nấu xong`;
   const customerMessage =
     nextStatus === ORDER_STATUSES.COOKING
-      ? `Don hang ${order.order_code} dang duoc bep che bien.`
-      : `Don hang ${order.order_code} da nau xong va dang cho giao.`;
+      ? `Đơn hàng ${order.order_code} đang được bếp chế biến.`
+      : `Đơn hàng ${order.order_code} đã nấu xong và đang chờ giao.`;
   const receiver = order.guest_phone || order.guest_email || order.member_phone || order.member_email || 'ADMIN';
 
   await connection.query(
@@ -226,7 +226,7 @@ const sendNotification = async (connection, order, nextStatus) => {
       INSERT INTO notifications (user_id, order_id, channel, receiver, title, content, send_status)
       VALUES (?, ?, 'PUSH', 'ADMIN', ?, ?, 'PENDING')
     `,
-    [null, order.order_id, 'Cap nhat KDS', adminMessage]
+    [null, order.order_id, 'Cập nhật KDS', adminMessage]
   );
 
   if (receiver !== 'ADMIN') {
@@ -235,7 +235,7 @@ const sendNotification = async (connection, order, nextStatus) => {
         INSERT INTO notifications (user_id, order_id, channel, receiver, title, content, send_status)
         VALUES (?, ?, ?, ?, ?, ?, 'PENDING')
       `,
-      [order.user_id || null, order.order_id, receiver.includes('@') ? 'EMAIL' : 'SMS', receiver, 'Cap nhat don hang', customerMessage]
+      [order.user_id || null, order.order_id, receiver.includes('@') ? 'EMAIL' : 'SMS', receiver, 'Cập nhật đơn hàng', customerMessage]
     );
   }
 };
@@ -249,12 +249,12 @@ const saveStatus = async ({ idOrCode, expectedStatus, nextStatus, kitchenStatus,
     const order = await loadOrderForUpdate(connection, idOrCode);
     if (!order) {
       await connection.rollback();
-      return buildError(404, 'Khong tim thay don hang');
+      return buildError(404, 'Không tìm thấy đơn hàng');
     }
 
     if (order.order_status === ORDER_STATUSES.CANCELLED) {
       await connection.rollback();
-      return buildError(409, 'Don da bi huy - dung xu ly', {
+      return buildError(409, 'Đơn đã bị hủy - dừng xử lý', {
         order_status: ORDER_STATUSES.CANCELLED
       });
     }

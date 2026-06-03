@@ -9,7 +9,7 @@ const createGuestOrder = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Tao don hang vang lai thanh cong', result.data, 201);
+    return successResponse(res, 'Tạo đơn hàng vãng lai thành công', result.data, 201);
   } catch (error) {
     return next(error);
   }
@@ -23,7 +23,7 @@ const getGuestOrderTracking = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Tra cuu don hang thanh cong', result.data);
+    return successResponse(res, 'Tra cứu đơn hàng thành công', result.data);
   } catch (error) {
     return next(error);
   }
@@ -37,7 +37,7 @@ const cancelGuestOrder = async (req, res, next) => {
       return errorResponse(res, result.message, result.statusCode, result.errors || null);
     }
 
-    return successResponse(res, 'Huy don hang vang lai thanh cong', result.data);
+    return successResponse(res, 'Hủy đơn hàng vãng lai thành công', result.data);
   } catch (error) {
     return next(error);
   }
