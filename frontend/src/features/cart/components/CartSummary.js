@@ -19,18 +19,18 @@ export const CartSummary = ({
   canCheckout = true,
   checkoutBlockReason = ''
 } = {}) => `
-  <aside class="cart-summary" aria-label="Tong tien gio hang">
-    <h2>Tong gio hang</h2>
+  <aside class="cart-summary" aria-label="Tổng tiền giỏ hàng">
+    <h2>Tổng giỏ hàng</h2>
     <div class="cart-summary__row">
-      <span>So luong mon</span>
+      <span>Số lượng mon</span>
       <strong>${totalQuantity}</strong>
     </div>
     <div class="cart-summary__row">
-      <span>Tam tinh</span>
+      <span>Tạm tính</span>
       <strong>${formatMoney(subtotal)}</strong>
     </div>
     <div class="cart-summary__row">
-      <span>Phi giao hang du kien</span>
+      <span>Phí giao hàng dự kiến</span>
       <strong>${formatMoney(0)}</strong>
     </div>
     ${VoucherInput({ appliedVoucher, errorMessage: voucherError, isApplying: isApplyingVoucher })}
@@ -38,14 +38,14 @@ export const CartSummary = ({
       appliedVoucher
         ? `
           <div class="cart-summary__row cart-summary__discount">
-            <span>Giam gia</span>
+            <span>Giảm giá</span>
             <strong>-${formatMoney(discountAmount)}</strong>
           </div>
         `
         : ''
     }
     <div class="cart-summary__total">
-      <span>Tong tien</span>
+      <span>Tổng tiền</span>
       <strong>${formatMoney(finalTotal)}</strong>
     </div>
     ${
@@ -53,7 +53,7 @@ export const CartSummary = ({
         ? `<p class="cart-summary__warning">${checkoutBlockReason}</p>`
         : ''
     }
-    <button class="button button-primary cart-checkout" type="button" data-continue-order ${canCheckout ? '' : 'disabled'}>Tiep tuc dat hang</button>
-    <button class="button button-secondary cart-clear" type="button" data-clear-cart>Xoa gio hang</button>
+    <button class="button button-primary cart-checkout" type="button" data-continue-order ${canCheckout ? '' : 'disabled'}>Tiếp tục đặt hàng</button>
+    <button class="button button-secondary cart-clear" type="button" data-clear-cart>Xóa giỏ hàng</button>
   </aside>
 `;

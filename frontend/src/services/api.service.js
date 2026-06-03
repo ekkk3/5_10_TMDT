@@ -3,11 +3,11 @@ const API_BASE_URL =
 
 const request = async (path, options = {}) => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {})
-    },
-    ...options
+    }
   });
 
   const payload = await response.json().catch(() => null);

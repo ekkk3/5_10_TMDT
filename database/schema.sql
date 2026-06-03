@@ -155,6 +155,9 @@ CREATE TABLE orders (
     note VARCHAR(255) NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
+    INDEX idx_orders_report_status_created (order_status, created_at),
+    INDEX idx_orders_report_created_customer (created_at, customer_type),
+    INDEX idx_orders_report_created_payment (created_at, payment_method),
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 

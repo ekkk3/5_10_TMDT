@@ -2,27 +2,30 @@ import { authService } from '../services/authService.js';
 import { adminAuthService } from '../services/adminAuthService.js';
 
 const guestLinks = [
-  { label: 'Thuc don', href: '#/menu' },
-  { label: 'Gio hang', href: '#/cart' },
-  { label: 'Tra cuu don', href: '#/orders/search' },
-  { label: 'Dang ky', href: '#/register' },
-  { label: 'Dang nhap', href: '#/login' }
+  { label: 'Thực đơn', href: '#/menu', icon: '🧾' },
+  { label: 'Giỏ hàng', href: '#/cart', icon: '🛒' },
+  { label: 'Tra cứu đơn', href: '#/orders/search', icon: '🔍︎' }
 ];
 
 const memberLinks = [
-  { label: 'Thuc don', href: '#/menu' },
-  { label: 'Gio hang', href: '#/cart' },
-  { label: 'Tra cuu don', href: '#/orders/search' },
-  { label: 'Tai khoan', href: '#/account' }
+  { label: 'Thực đơn', href: '#/menu', icon: '🧾' },
+  { label: 'Giỏ hàng', href: '#/cart', icon: '🛒' },
+  { label: 'Tra cứu đơn', href: '#/orders/search', icon: '🔍︎' },
+  { label: 'Tài khoản', href: '#/account', icon: '👤' }
 ];
 
-const adminLinks = [
-  { label: 'Dashboard', href: '#/admin' },
-  { label: 'Don hang', href: '#/admin/orders' },
-  { label: 'KDS bep', href: '#/kitchen' }
+const adminLinks = [];
+
+const kitchenLinks = [
+  { label: 'KDS bếp', href: '#/kitchen', icon: '👩🏻‍🍳' }
 ];
 
 const getPath = () => window.location.hash.replace('#', '') || window.location.pathname || '/';
+
+const getUserInitial = (name) => {
+  if (!name) return '?';
+  return name.charAt(0).toUpperCase();
+};
 
 const getSessionMode = () => {
   const path = getPath();
@@ -31,44 +34,118 @@ const getSessionMode = () => {
   const isAdminPath = path.startsWith('/admin') || path.startsWith('/kitchen');
 
   if (adminSession || isAdminPath) {
+    const userName = adminSession?.user?.full_name || adminSession?.full_name || '';
+    const roleName = adminSession?.user?.role_name || adminSession?.role_name || 'Quản trị';
+    const permissions = adminSession?.permissions || adminSession?.user?.permissions || [];
+    const isKitchenOnly = permissions.length > 0 && permissions.every(p => p === 'KITCHEN_KDS' || p === 'ADMIN_ACCESS');
     return {
-      label: 'Phien 3',
-      title: 'Quan tri & Van hanh noi bo',
+      mode: 'admin',
       className: 'navbar--admin',
-      links: adminSession ? adminLinks : [{ label: 'Dang nhap quan tri', href: '#/admin/login' }]
+      links: adminSession ? (isKitchenOnly ? kitchenLinks : adminLinks) : [{ label: 'Đăng nhập quản trị', href: '#/admin/login', icon: '🔐' }],
+      userName,
+      roleName,
+      isLoggedIn: Boolean(adminSession)
     };
   }
 
   if (customerSession) {
+    const userName = customerSession?.user?.full_name || customerSession?.full_name || 'Thành viên';
     return {
-      label: 'Phien 2',
-      title: 'Khach thanh vien',
+      mode: 'member',
       className: 'navbar--member',
-      links: memberLinks
+      links: memberLinks,
+      userName,
+      roleName: 'Thành viên',
+      isLoggedIn: true
     };
   }
 
   return {
-    label: 'Phien 1',
-    title: 'Khach vang lai',
+    mode: 'guest',
     className: 'navbar--guest',
-    links: guestLinks
+    links: guestLinks,
+    userName: '',
+    roleName: '',
+    isLoggedIn: false
   };
 };
 
 export const Navbar = () => {
-  const mode = getSessionMode();
+  const session = getSessionMode();
+  const path = getPath();
+
+  const linksHtml = session.links
+    .map((link) => {
+      const linkPath = link.href.replace('#', '') || '/';
+      const isActive = path === linkPath || (linkPath !== '/' && path.startsWith(linkPath));
+      return `<a class="nav-link ${isActive ? 'is-active' : ''}" href="${link.href}">${link.label}</a>`;
+    })
+    .join('');
+
+  const renderRightSection = () => {
+    if (session.mode === 'guest') {
+      return `
+        <div class="nav-right">
+          <a class="nav-btn" href="#/login">Đăng nhập</a>
+          <a class="nav-btn nav-btn--accent" href="#/register">Đăng ký</a>
+        </div>
+      `;
+    }
+
+    if (session.mode === 'member') {
+      return `
+        <div class="nav-right">
+          <div class="nav-user">
+            <span class="nav-avatar">${getUserInitial(session.userName)}</span>
+            ${session.userName}
+          </div>
+          <a class="nav-btn nav-btn--danger" href="#/login" onclick="localStorage.removeItem('fast-food-auth-session');window.dispatchEvent(new CustomEvent('auth:changed'));">
+            ⏻ Đăng xuất
+          </a>
+        </div>
+      `;
+    }
+
+    // Admin
+    if (session.isLoggedIn) {
+      return `
+        <div class="nav-right">
+          <span class="nav-badge">QUẢN TRỊ</span>
+          <div class="nav-user">
+            <span class="nav-avatar">${getUserInitial(session.userName)}</span>
+            ${session.userName || session.roleName}
+          </div>
+          <a class="nav-btn nav-btn--danger" href="#/admin/login" onclick="localStorage.removeItem('fast-food-admin-session');window.dispatchEvent(new CustomEvent('admin-auth:changed'));">
+            ⏻ Đăng xuất
+          </a>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="nav-right">
+        <a class="nav-btn nav-btn--accent" href="#/admin/login">🔐 Đăng nhập quản trị</a>
+      </div>
+    `;
+  };
 
   return `
-    <header class="navbar ${mode.className}">
-      <a class="brand" href="#/">
-        <span>FastFood</span>
-        <small>${mode.label} - ${mode.title}</small>
+    <header class="navbar ${session.className}">
+      <a class="brand" href="${session.mode === 'admin' ? '#/admin' : '#/'}">
+        <span class="brand-icon">🍔</span>
+        <span class="brand-text">
+          FastFood
+          <small>${session.mode === 'admin' ? 'Quản trị nội bộ' : session.mode === 'member' ? 'Thành viên' : 'Đặt món nhanh'}</small>
+        </span>
       </a>
-      <nav class="nav-links" aria-label="Dieu huong ${mode.title}">
-        ${mode.links.map((link) => `<a class="nav-link" href="${link.href}">${link.label}</a>`).join('')}
-        ${mode.className === 'navbar--admin' ? '<a class="nav-link nav-link--switch" href="#/">Cong khach hang</a>' : '<a class="nav-link nav-link--switch" href="#/admin/login">Cong quan tri</a>'}
-      </nav>
+
+      <button class="nav-toggle" onclick="this.closest('.navbar').classList.toggle('is-open')" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+
+      ${linksHtml ? `<nav class="nav-center" aria-label="Điều hướng chính">${linksHtml}</nav>` : ''}
+
+      ${renderRightSection()}
     </header>
   `;
 };

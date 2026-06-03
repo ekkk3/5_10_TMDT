@@ -12,16 +12,19 @@ import { AdminUserListPage, mountAdminUserListPage } from '../features/admin-use
 import { KitchenKDSPage, mountKitchenKDSPage } from '../features/kitchen-kds/KitchenKDSPage.js';
 import { RegisterPage, mountRegisterPage } from '../features/auth/RegisterPage.js';
 import { LoginPage, mountLoginPage } from '../features/auth/LoginPage.js';
-import { ForgotPasswordPage } from '../features/auth/ForgotPasswordPage.js';
+import { ForgotPasswordPage, mountForgotPasswordPage } from '../features/auth/ForgotPasswordPage.js';
 import { AccountPage, mountAccountPage } from '../features/auth/AccountPage.js';
 import { AdminLoginPage, mountAdminLoginPage } from '../features/admin-auth/AdminLoginPage.js';
 import { AdminDashboardPage, mountAdminDashboardPage } from '../features/admin-auth/AdminDashboardPage.js';
+import { SupportPage, mountSupportPage } from '../features/support/SupportPage.js';
+import { AdminOperationsPage, mountAdminOperationsPage } from '../features/admin-operations/AdminOperationsPage.js';
+import { AdminReportPage, mountAdminReportPage } from '../features/admin-orders/AdminReportPage.js';
 
 
 const PlaceholderPage = (title) => `
   <section class="placeholder-page">
     <h1>${title}</h1>
-    <p>Trang dang duoc chuan bi trong cac buoc phat trien tiep theo.</p>
+    <p>Trang đang được chuẩn bị trong các bước phát triển tiếp theo.</p>
   </section>
 `;
 
@@ -57,7 +60,14 @@ const routes = {
     render: () => CustomerLayout(AccountPage()),
     afterRender: mountAccountPage
   },
-  '/forgot-password': () => AuthLayout(ForgotPasswordPage()),
+  '/forgot-password': {
+    render: () => AuthLayout(ForgotPasswordPage()),
+    afterRender: mountForgotPasswordPage
+  },
+  '/support': {
+    render: () => CustomerLayout(SupportPage()),
+    afterRender: mountSupportPage
+  },
   '/admin/login': {
     render: () => AuthLayout(AdminLoginPage()),
     afterRender: mountAdminLoginPage
@@ -73,6 +83,14 @@ const routes = {
   '/admin/users': {
     render: () => AdminLayout(AdminUserListPage(), { requiredPermission: 'USER_MANAGE' }),
     afterRender: mountAdminUserListPage
+  },
+  '/admin/operations': {
+    render: () => AdminLayout(AdminOperationsPage(), { requiredPermission: 'ADMIN_DASHBOARD' }),
+    afterRender: mountAdminOperationsPage
+  },
+  '/admin/reports': {
+    render: () => AdminLayout(AdminReportPage(), { requiredPermission: 'ADMIN_DASHBOARD' }),
+    afterRender: mountAdminReportPage
   },
   '/kitchen': {
     render: () => AdminLayout(KitchenKDSPage(), { requiredPermission: 'KITCHEN_KDS' }),

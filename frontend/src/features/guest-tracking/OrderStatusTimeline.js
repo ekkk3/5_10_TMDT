@@ -1,11 +1,11 @@
 const ORDER_STATUS_LABELS = {
-  PENDING: 'Cho duyet',
-  CONFIRMED: 'Da xac nhan',
-  COOKING: 'Dang nau',
-  READY: 'Cho giao',
-  DELIVERING: 'Dang giao',
-  COMPLETED: 'Hoan thanh',
-  CANCELLED: 'Da huy'
+  PENDING: 'Chờ duyệt',
+  CONFIRMED: 'Đã xác nhận',
+  COOKING: 'Đang nấu',
+  READY: 'Chờ giao',
+  DELIVERING: 'Đang giao',
+  COMPLETED: 'Hoàn thành',
+  CANCELLED: 'Đã hủy'
 };
 
 const ORDER_STATUS_FLOW = ['PENDING', 'CONFIRMED', 'COOKING', 'READY', 'DELIVERING', 'COMPLETED'];
@@ -55,7 +55,7 @@ export const OrderStatusTimeline = ({ orderStatus, statusHistory = [] } = {}) =>
   const currentIndex = statuses.indexOf(orderStatus);
 
   return `
-    <ol class="tracking-timeline" aria-label="Tien trinh don hang">
+    <ol class="tracking-timeline" aria-label="Tiến trình đơn hàng">
       ${statuses
         .map((status, index) => {
           const history = historyByStatus.get(status);

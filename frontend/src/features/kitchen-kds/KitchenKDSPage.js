@@ -22,10 +22,10 @@ const formatDateTime = (value) => {
 
 const getStatusLabel = (status) =>
   ({
-    CONFIRMED: 'Cho nau',
-    COOKING: 'Dang nau',
-    READY: 'Cho giao',
-    CANCELLED: 'Da huy'
+    CONFIRMED: 'Chờ nấu',
+    COOKING: 'Đang nấu',
+    READY: 'Chờ giao',
+    CANCELLED: 'Đã hủy'
   })[status] || status || '';
 
 const pageStyles = `
@@ -33,7 +33,7 @@ const pageStyles = `
     .kds-page { display: grid; gap: 18px; }
     .kds-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; }
     .kds-header h1 { margin: 0 0 8px; font-size: 34px; }
-    .kds-header p { margin: 0; max-width: 720px; color: var(--muted); line-height: 1.5; }
+    .kds-header p { margin: 0; max-width: 1040px; color: var(--muted); line-height: 1.5; }
     .kds-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .kds-stat { padding: 10px 12px; border: 1px solid #ffe0aa; border-radius: 8px; background: #fffaf3; font-weight: 900; }
     .kds-stat span { color: var(--muted); font-weight: 700; }
@@ -88,7 +88,7 @@ const renderOptions = (options = []) => {
 
 const renderItems = (items = []) => {
   if (!items.length) {
-    return '<div class="kds-empty">Don chua co mon can nau.</div>';
+    return '<div class="kds-empty">Đơn chưa có món cần nấu.</div>';
   }
 
   return `
@@ -100,8 +100,8 @@ const renderItems = (items = []) => {
               <span class="kds-item__qty">x${Number(item.quantity || 0)}</span>
               <div>
                 <strong>${escapeHtml(item.food_name)}</strong>
-                <span class="kds-card__meta">Trang thai mon: ${escapeHtml(item.kitchen_status || '-')}</span>
-                ${item.note ? `<p>Ghi chu: ${escapeHtml(item.note)}</p>` : ''}
+                <span class="kds-card__meta">Trạng thái món: ${escapeHtml(item.kitchen_status || '-')}</span>
+                ${item.note ? `<p>Ghi chú: ${escapeHtml(item.note)}</p>` : ''}
                 ${renderOptions(item.options || [])}
               </div>
             </li>
@@ -122,31 +122,31 @@ const renderOrderCard = (order, { isUpdating = false } = {}) => {
       <header class="kds-card__header">
         <div>
           <h3>${escapeHtml(order.order_code)}</h3>
-          <span class="kds-card__meta">${escapeHtml(order.customer_name || 'Khach hang')} - ${formatDateTime(order.created_at)}</span>
+          <span class="kds-card__meta">${escapeHtml(order.customer_name || 'Khách hàng')} - ${formatDateTime(order.created_at)}</span>
         </div>
         <span class="kds-badge status-${escapeHtml(order.order_status)}">${escapeHtml(getStatusLabel(order.order_status))}</span>
       </header>
       ${
         isCancelled
-          ? `<div class="kds-message error">Don da bi huy - dung xu ly.${order.cancel_reason ? ` Ly do: ${escapeHtml(order.cancel_reason)}` : ''}</div>`
+          ? `<div class="kds-message error">Đơn đã bị hủy - dừng xử lý.${order.cancel_reason ? ` Lý do: ${escapeHtml(order.cancel_reason)}` : ''}</div>`
           : ''
       }
-      ${order.note ? `<div class="kds-message success">Ghi chu don: ${escapeHtml(order.note)}</div>` : ''}
+      ${order.note ? `<div class="kds-message success">Ghi chú đơn: ${escapeHtml(order.note)}</div>` : ''}
       ${renderItems(order.items || [])}
       <div class="kds-actions">
         ${
           canStart
-            ? `<button class="kds-action start" type="button" data-mark-cooking="${order.order_id}" ${isUpdating ? 'disabled' : ''}>Nhan mon / Bat dau nau</button>`
+            ? `<button class="kds-action start" type="button" data-mark-cooking="${order.order_id}" ${isUpdating ? 'disabled' : ''}>Nhận món / Bắt đầu nấu</button>`
             : ''
         }
         ${
           canReady
-            ? `<button class="kds-action ready" type="button" data-mark-ready="${order.order_id}" ${isUpdating ? 'disabled' : ''}>Hoan thanh</button>`
+            ? `<button class="kds-action ready" type="button" data-mark-ready="${order.order_id}" ${isUpdating ? 'disabled' : ''}>Hoàn thành</button>`
             : ''
         }
         ${
           !isCancelled && (canStart || canReady)
-            ? `<button class="kds-action secondary" type="button" data-request-stock-alert="${order.order_id}">Bao het nguyen lieu</button>`
+            ? `<button class="kds-action secondary" type="button" data-request-stock-alert="${order.order_id}">Báo hết nguyên liệu</button>`
             : ''
         }
       </div>
@@ -161,39 +161,39 @@ const renderPageBody = ({ orders = [], readyOrders = [], summary = {}, isLoading
   return `
     <div class="kds-header">
       <div>
-        <h1>KDS bep</h1>
-        <p>Theo doi ticket bep theo thu tu thoi gian, nhan mon, cap nhat Dang nau va Hoan thanh de dong bo timeline cho admin/khach hang.</p>
+        <h1>KDS bếp</h1>
+        <p>Theo dõi ticket bếp theo thứ tự thời gian, nhận món, cập nhật Đang nấu và Hoàn thành để đồng bộ timeline cho admin/khách hàng.</p>
       </div>
       <div class="kds-toolbar">
-        <div class="kds-stat">${summary.confirmed || 0} <span>cho nau</span></div>
-        <div class="kds-stat">${summary.cooking || 0} <span>dang nau</span></div>
-        <button class="button button-secondary" type="button" data-refresh-kds>${isLoading ? 'Dang tai...' : 'Tai lai man hinh'}</button>
+        <div class="kds-stat">${summary.confirmed || 0} <span>chờ nấu</span></div>
+        <div class="kds-stat">${summary.cooking || 0} <span>đang nấu</span></div>
+        <button class="button button-secondary" type="button" data-refresh-kds>${isLoading ? 'Đang tải...' : 'Tải lại màn hình'}</button>
       </div>
     </div>
     ${error ? `<div class="kds-message error" role="alert">${escapeHtml(error)}</div>` : ''}
     ${success ? `<div class="kds-message success">${escapeHtml(success)}</div>` : ''}
     ${
       cancelledOrders.length
-        ? `<div class="kds-cancel-alert"><strong>DON HUY - DUNG NAU</strong>${cancelledOrders
+        ? `<div class="kds-cancel-alert"><strong>ĐƠN HỦY - DỪNG NẤU</strong>${cancelledOrders
             .map((order) => `${escapeHtml(order.order_code)}${order.cancel_reason ? `: ${escapeHtml(order.cancel_reason)}` : ''}`)
             .join('<br>')}</div>`
         : ''
     }
     <div class="kds-sections">
       <section class="kds-section">
-        <h2>Dang xu ly</h2>
+        <h2>Đang xử lý</h2>
         ${
           activeOrders.length
             ? `<div class="kds-grid">${activeOrders.map((order) => renderOrderCard(order, { isUpdating: updatingOrderId === order.order_id })).join('')}</div>`
-            : `<div class="kds-empty">${isLoading ? 'Dang tai don cho bep...' : 'Khong co don CONFIRMED/COOKING.'}</div>`
+            : `<div class="kds-empty">${isLoading ? 'Đang tải đơn chờ bếp...' : 'Không có đơn CONFIRMED/COOKING.'}</div>`
         }
       </section>
       <section class="kds-section">
-        <h2>Cho giao</h2>
+        <h2>Chờ giao</h2>
         ${
           readyOrders.length
             ? `<div class="kds-grid">${readyOrders.map((order) => renderOrderCard({ ...order, order_status: 'READY' })).join('')}</div>`
-            : '<div class="kds-empty">Don hoan thanh se hien tai day trong phien lam viec.</div>'
+            : '<div class="kds-empty">Đơn hoàn thành sẽ hiển thị tại đây trong phiên làm việc.</div>'
         }
       </section>
     </div>
@@ -233,7 +233,7 @@ export const mountKitchenKDSPage = () => {
       orders = data.orders || [];
       summary = data.summary || {};
     } catch (requestError) {
-      error = requestError?.message || 'Loi ket noi mang. Vui long dung quy trinh giay du phong va tai lai man hinh khi co mang.';
+      error = requestError?.message || 'Lỗi kết nối mạng. Vui lòng dùng quy trình giấy dự phòng và tải lại màn hình khi có mạng.';
     } finally {
       isLoading = false;
       render();
@@ -251,8 +251,8 @@ export const mountKitchenKDSPage = () => {
       const result = await kitchenService.updateStatus(orderId, nextStatus);
       success =
         nextStatus === 'COOKING'
-          ? `Bep bat dau nau don ${result.order_code}.`
-          : `Don ${result.order_code} da nau xong va chuyen sang Cho giao.`;
+          ? `Bếp bắt đầu nấu đơn ${result.order_code}.`
+          : `Đơn ${result.order_code} đã nấu xong và chủyển sang Chờ giao.`;
 
       if (nextStatus === 'READY' && currentOrder) {
         readyOrders = [{ ...currentOrder, order_status: 'READY', updated_at: new Date().toISOString() }, ...readyOrders].slice(0, 6);
@@ -260,7 +260,7 @@ export const mountKitchenKDSPage = () => {
 
       await loadOrders();
     } catch (requestError) {
-      error = requestError?.message || 'Khong the cap nhat trang thai KDS.';
+      error = requestError?.message || 'Không thể cập nhật trạng thái KDS.';
       await loadOrders();
     } finally {
       updatingOrderId = null;
@@ -293,8 +293,8 @@ export const mountKitchenKDSPage = () => {
     if (stockAlertButton) {
       const order = orders.find((item) => String(item.order_id) === String(stockAlertButton.dataset.requestStockAlert));
       success = order
-        ? `Da ghi nhan can xu ly het nguyen lieu cho don ${order.order_code}. Admin se xu ly doi/huy don voi khach.`
-        : 'Da ghi nhan can xu ly het nguyen lieu.';
+        ? `Đã ghi nhận cần xử lý hết nguyên liệu cho đơn ${order.order_code}. Admin sẽ xử lý đổi/hủy đơn với khách.`
+        : 'Đã ghi nhận cần xử lý hết nguyên liệu.';
       render();
     }
   });

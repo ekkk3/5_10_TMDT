@@ -28,7 +28,7 @@ const getFallbackImage = (foodName) => {
 };
 
 const renderOptions = (options = []) => {
-  if (!options.length) return '<span>Khong co tuy chon</span>';
+  if (!options.length) return '<span>Không có tùy chọn</span>';
 
   return options
     .map((option) => {
@@ -56,10 +56,10 @@ const getValidationMessages = (validationState, cartItemId) => validationState[c
 
 const getCheckoutBlockReason = ({ isCheckingCart, validationState }) => {
   if (!CartContext.cartItems.length) return '';
-  if (isCheckingCart) return 'Dang kiem tra lai gio hang...';
+  if (isCheckingCart) return 'Đang kiểm tra lại giỏ hàng...';
 
   const hasInvalidItem = CartContext.cartItems.some((item) => getValidationMessages(validationState, item.cart_item_id).length > 0);
-  return hasInvalidItem ? 'Gio hang co mon het hang hoac khong hop le. Vui long cap nhat truoc khi dat hang.' : '';
+  return hasInvalidItem ? 'Giỏ hàng có món hết hàng hoặc không hợp lệ. Vui lòng cập nhật trước khi đặt hàng.' : '';
 };
 
 const renderCartItem = (item, validationState = {}) => {
@@ -76,8 +76,8 @@ const renderCartItem = (item, validationState = {}) => {
           <strong>${formatMoney(item.item_total)}</strong>
         </div>
         <div class="cart-item__options">${renderOptions(item.selected_options)}</div>
-        ${item.note ? `<p class="cart-item__note">Ghi chu: ${escapeHtml(item.note)}</p>` : ''}
-        <p class="cart-item__price">Don gia: ${formatMoney(Number(item.item_total || 0) / Number(item.quantity || 1))}</p>
+        ${item.note ? `<p class="cart-item__note">Ghi chú: ${escapeHtml(item.note)}</p>` : ''}
+        <p class="cart-item__price">Đơn giá: ${formatMoney(Number(item.item_total || 0) / Number(item.quantity || 1))}</p>
         ${
           messages.length
             ? `<div class="cart-item__warning">${messages.map((message) => `<p>${escapeHtml(message)}</p>`).join('')}</div>`
@@ -85,12 +85,12 @@ const renderCartItem = (item, validationState = {}) => {
         }
       </div>
       <div class="cart-item__actions">
-        <div class="cart-quantity" aria-label="Cap nhat so luong">
+        <div class="cart-quantity" aria-label="Cập nhật số lượng">
           <button type="button" data-quantity-step="-1" aria-label="Giam so luong">-</button>
-          <input type="number" min="1" step="1" value="${Number(item.quantity || 1)}" data-cart-quantity aria-label="So luong ${escapeHtml(item.food_name)}" />
+          <input type="number" min="1" step="1" value="${Number(item.quantity || 1)}" data-cart-quantity aria-label="Số lượng ${escapeHtml(item.food_name)}" />
           <button type="button" data-quantity-step="1" aria-label="Tang so luong">+</button>
         </div>
-        <button class="button button-secondary cart-remove" type="button" data-remove-cart-item>Xoa</button>
+        <button class="button button-secondary cart-remove" type="button" data-remove-cart-item>Xóa</button>
       </div>
     </article>
   `;
@@ -98,9 +98,9 @@ const renderCartItem = (item, validationState = {}) => {
 
 const renderEmptyState = () => `
   <section class="cart-empty">
-    <h2>Gio hang dang trong</h2>
-    <p>Chon mon trong thuc don de them vao gio hang tam cua khach vang lai.</p>
-    <a class="button button-primary" href="#/menu">Xem thuc don</a>
+    <h2>Giỏ hàng đang trống</h2>
+    <p>Chọn món trong thực đơn để thêm vào giỏ hàng tạm của khách vãng lai.</p>
+    <a class="button button-primary" href="#/menu">Xem thực đơn</a>
   </section>
 `;
 
@@ -114,7 +114,7 @@ const renderCartContent = ({ voucherError = '', isApplyingVoucher = false, valid
 
   return `
     <div class="cart-layout">
-      <section class="cart-list" aria-label="Danh sach mon trong gio">
+      <section class="cart-list" aria-label="Danh sách món trong giỏ">
         ${cartItems.map((item) => renderCartItem(item, validationState)).join('')}
       </section>
       ${CartSummary({
@@ -141,12 +141,12 @@ const validateCartItem = async (item) => {
     const messages = [];
 
     if (!isFoodAvailable(food)) {
-      messages.push('Mon nay hien dang het hang hoac tam ngung ban.');
+      messages.push('Món này hiện đang hết hàng hoặc tạm ngừng bán.');
     }
 
     const inventory = food.inventory || {};
     if (!inventory.is_unlimited && inventory.quantity !== null && inventory.quantity !== undefined && Number(item.quantity || 0) > Number(inventory.quantity || 0)) {
-      messages.push(`So luong vuot ton kho hien tai. Chi con ${Number(inventory.quantity || 0)} phan.`);
+      messages.push(`Số lượng vượt tồn kho hiện tại. Chỉ còn ${Number(inventory.quantity || 0)} phần.`);
     }
 
     const optionMap = new Map(flattenOptions(optionGroups).map((option) => [Number(option.option_id), option]));
@@ -157,7 +157,7 @@ const validateCartItem = async (item) => {
       const currentOption = optionMap.get(Number(option.option_id));
 
       if (!currentOption || currentOption.status !== 'ACTIVE') {
-        messages.push(`Tuy chon "${option.option_name || option.option_id}" khong con kha dung.`);
+        messages.push(`Tùy chọn "${option.option_name || option.option_id}" không còn khả dụng.`);
         hasInvalidOption = true;
         continue;
       }
@@ -187,7 +187,7 @@ const validateCartItem = async (item) => {
   } catch (error) {
     return {
       cart_item_id: item.cart_item_id,
-      messages: ['Mon trong gio khong con ton tai hoac khong the kiem tra.'],
+      messages: ['Món trong giỏ không còn tồn tại hoặc không thể kiểm tra.'],
       refreshedItem: item,
       changed: false
     };
@@ -199,7 +199,7 @@ const pageStyles = `
     .cart-page { padding: 6px 0 24px; }
     .cart-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
     .cart-header h1 { margin: 0 0 8px; font-size: 34px; }
-    .cart-header p { margin: 0; max-width: 680px; color: var(--muted); line-height: 1.5; }
+    .cart-header p { margin: 0; max-width: 1040px; color: var(--muted); line-height: 1.5; }
     .cart-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: flex-start; }
     .cart-list { display: grid; gap: 12px; }
     .cart-item { display: grid; grid-template-columns: 130px minmax(0, 1fr) 172px; gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
@@ -257,10 +257,10 @@ export const CartPage = () => `
   <section class="cart-page" data-cart-page>
     <div class="cart-header">
       <div>
-        <h1>Gio hang</h1>
-        <p>Quan ly mon da chon, cap nhat so luong va kiem tra tong tien truoc khi tiep tuc dat hang.</p>
+        <h1>Giỏ hàng</h1>
+        <p>Quản lý món đã chọn, cập nhật số lượng và kiểm tra tổng tiền trước khi tiếp tục đặt hàng.</p>
       </div>
-      <a class="button button-secondary" href="#/menu">Them mon</a>
+      <a class="button button-secondary" href="#/menu">Thêm món</a>
     </div>
     <div data-cart-content>${renderCartContent()}</div>
   </section>
@@ -361,7 +361,7 @@ export const mountCartPage = () => {
     const code = new FormData(form).get('voucherCode');
 
     if (!String(code || '').trim()) {
-      voucherError = 'Vui long nhap ma voucher';
+      voucherError = 'Vui lòng nhập mã voucher';
       render();
       return;
     }
@@ -380,7 +380,7 @@ export const mountCartPage = () => {
       voucherError = '';
     } catch (error) {
       CartContext.removeVoucher();
-      voucherError = error?.message || 'Khong the ap dung voucher';
+      voucherError = error?.message || 'Không thể áp dụng voucher';
     } finally {
       isApplyingVoucher = false;
       render();

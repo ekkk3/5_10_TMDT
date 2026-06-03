@@ -110,7 +110,7 @@ export const authService = {
       saveSession({ ...session, user: response.data });
       return response.data;
     } catch (error) {
-      if (error?.statusCode === 401 || error?.message?.includes('Phien dang nhap')) {
+      if (error?.statusCode === 401 || error?.message?.includes('Phiên đăng nhập')) {
         clearSession();
       }
 
@@ -134,6 +134,20 @@ export const authService = {
     const response = await apiService.post('/auth/register/verify', {
       verification_token: verificationToken,
       otp
+    });
+    return response.data;
+  },
+
+  requestPasswordReset: async (identifier) => {
+    const response = await apiService.post('/auth/password/forgot', { identifier });
+    return response.data;
+  },
+
+  resetPassword: async ({ verificationToken, otp, password }) => {
+    const response = await apiService.post('/auth/password/reset', {
+      verification_token: verificationToken,
+      otp,
+      password
     });
     return response.data;
   }

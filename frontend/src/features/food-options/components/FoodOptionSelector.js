@@ -15,25 +15,25 @@ const escapeHtml = (value = '') =>
 const formatMoney = (value) => moneyFormatter.format(Number(value || 0));
 
 const getGroupTitle = (optionType) => {
-  if (optionType === 'SIZE') return 'Chon size';
-  if (optionType === 'TOPPING') return 'Chon topping';
-  return 'Tuy chon khac';
+  if (optionType === 'SIZE') return 'Chọn size';
+  if (optionType === 'TOPPING') return 'Chọn topping';
+  return 'Tùy chọn khác';
 };
 
 const renderOptionPrice = (extraPrice) => {
   const price = Number(extraPrice || 0);
-  return price > 0 ? `+${formatMoney(price)}` : 'Mien phi';
+  return price > 0 ? `+${formatMoney(price)}` : 'Miễn phí';
 };
 
 const renderEmptyOptions = () => `
-  <div class="food-options__empty">Mon nay chua co tuy chon them.</div>
+  <div class="food-options__empty">Món này chưa có tùy chọn thêm.</div>
 `;
 
 export const SizeSelector = (group) => `
   <section class="food-option-group" data-option-group="SIZE" data-required="${group.is_required ? 'true' : 'false'}" data-max-select="1">
     <div class="food-option-group__header">
       <h3>${getGroupTitle('SIZE')}</h3>
-      ${group.is_required ? '<span>Bat buoc</span>' : ''}
+      ${group.is_required ? '<span>Bắt buộc</span>' : ''}
     </div>
     <div class="food-option-group__choices food-option-group__choices--size">
       ${group.options
@@ -55,7 +55,7 @@ export const SizeSelector = (group) => `
               />
               <span>
                 <strong>${escapeHtml(option.option_name)}</strong>
-                <small>${isOutOfStock ? 'Het hang' : renderOptionPrice(option.extra_price)}</small>
+                <small>${isOutOfStock ? 'Hết hàng' : renderOptionPrice(option.extra_price)}</small>
               </span>
             </label>
           `;
@@ -73,7 +73,7 @@ export const ToppingSelector = (group) => {
     <section class="food-option-group" data-option-group="TOPPING" data-required="${group.is_required ? 'true' : 'false'}" data-max-select="${maxSelect}">
       <div class="food-option-group__header">
         <h3>${getGroupTitle('TOPPING')}</h3>
-        <span>${maxSelect > 0 ? `Toi da ${maxSelect}` : 'Tuy chon'}</span>
+        <span>${maxSelect > 0 ? `Tối đa ${maxSelect}` : 'Tùy chọn'}</span>
       </div>
       <div class="food-option-group__choices">
         ${group.options
@@ -94,7 +94,7 @@ export const ToppingSelector = (group) => {
                 />
                 <span>
                   <strong>${escapeHtml(option.option_name)}</strong>
-                  <small>${isOutOfStock ? 'Het hang' : renderOptionPrice(option.extra_price)}</small>
+                  <small>${isOutOfStock ? 'Hết hàng' : renderOptionPrice(option.extra_price)}</small>
                 </span>
               </label>
             `;
@@ -110,7 +110,7 @@ const OtherOptionSelector = (group) => `
   <section class="food-option-group" data-option-group="${escapeHtml(group.option_type)}" data-required="${group.is_required ? 'true' : 'false'}" data-max-select="${Number(group.max_select || 0)}">
     <div class="food-option-group__header">
       <h3>${escapeHtml(getGroupTitle(group.option_type))}</h3>
-      ${group.is_required ? '<span>Bat buoc</span>' : ''}
+      ${group.is_required ? '<span>Bắt buộc</span>' : ''}
     </div>
     <div class="food-option-group__choices">
       ${group.options
@@ -131,7 +131,7 @@ const OtherOptionSelector = (group) => `
               />
               <span>
                 <strong>${escapeHtml(option.option_name)}</strong>
-                <small>${isOutOfStock ? 'Het hang' : renderOptionPrice(option.extra_price)}</small>
+                <small>${isOutOfStock ? 'Hết hàng' : renderOptionPrice(option.extra_price)}</small>
               </span>
             </label>
           `;
@@ -187,7 +187,7 @@ export const validateSelectedOptions = (root) => {
       isValid = false;
       group.classList.add('has-error');
       if (errorNode) {
-        errorNode.textContent = optionType === 'SIZE' ? 'Vui long chon size.' : 'Vui long chon tuy chon bat buoc.';
+        errorNode.textContent = optionType === 'SIZE' ? 'Vui lòng chọn size.' : 'Vui lòng chọn tùy chọn bắt buộc.';
       }
     }
   });
@@ -212,7 +212,7 @@ export const enforceMaxSelect = (group, changedInput) => {
   });
 
   if (errorNode) {
-    errorNode.textContent = checkedCount >= maxSelect ? `Da dat gioi han ${maxSelect} topping.` : '';
+    errorNode.textContent = checkedCount >= maxSelect ? `Đã đạt giới hạn ${maxSelect} topping.` : '';
   }
 };
 

@@ -17,10 +17,10 @@ const escapeHtml = (value = '') =>
 const formatMoney = (value) => moneyFormatter.format(Number(value || 0));
 
 const formatDateTime = (value) => {
-  if (!value) return 'Chua co cap nhat';
+  if (!value) return 'Chưa có cập nhật';
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Chua co cap nhat';
+  if (Number.isNaN(date.getTime())) return 'Chưa có cập nhật';
 
   return new Intl.DateTimeFormat('vi-VN', {
     dateStyle: 'medium',
@@ -49,7 +49,7 @@ const renderOptions = (options = []) => {
 
 const renderItems = (items = []) => {
   if (!items.length) {
-    return '<p class="tracking-result__muted">Don hang chua co du lieu mon.</p>';
+    return '<p class="tracking-result__muted">Đơn hàng chưa có dữ liệu món.</p>';
   }
 
   return `
@@ -60,8 +60,8 @@ const renderItems = (items = []) => {
             <li class="tracking-items__row">
               <div>
                 <strong>${escapeHtml(item.food_name)}</strong>
-                <span>So luong: ${Number(item.quantity || 0)}</span>
-                <span>Don gia: ${formatMoney(item.unit_price)}</span>
+                <span>Số lượng: ${Number(item.quantity || 0)}</span>
+                <span>Đơn giá: ${formatMoney(item.unit_price)}</span>
                 ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ''}
                 ${renderOptions(item.options || [])}
               </div>
@@ -81,7 +81,7 @@ export const TrackingResult = (order) => {
     <section class="tracking-result" aria-live="polite">
       <div class="tracking-result__header">
         <div>
-          <span class="tracking-result__eyebrow">Ma don ${escapeHtml(order.order_code)}</span>
+          <span class="tracking-result__eyebrow">Mã đơn ${escapeHtml(order.order_code)}</span>
           <h2>${escapeHtml(getOrderStatusLabel(order.order_status))}</h2>
         </div>
         <strong class="tracking-result__amount">${formatMoney(order.total_amount)}</strong>
@@ -89,49 +89,49 @@ export const TrackingResult = (order) => {
 
       <div class="tracking-summary">
         <div>
-          <span>Khach hang</span>
+          <span>Khách hàng</span>
           <strong>${escapeHtml(order.guest_name)}</strong>
         </div>
         <div>
-          <span>So dien thoai</span>
+          <span>Số điện thoại</span>
           <strong>${escapeHtml(order.guest_phone)}</strong>
         </div>
         <div>
-          <span>Thanh toan</span>
+          <span>Thanh toán</span>
           <strong>${escapeHtml(order.payment_method || '-')} / ${escapeHtml(order.payment_status || '-')}</strong>
         </div>
         <div>
-          <span>Cap nhat gan nhat</span>
+          <span>Cập nhật gần nhất</span>
           <strong>${escapeHtml(formatDateTime(order.updated_at))}</strong>
         </div>
       </div>
 
       <div class="tracking-detail-grid">
         <div>
-          <span>Dia chi giao hang</span>
-          <strong>${escapeHtml(order.delivery_address || 'Chua co dia chi')}</strong>
+          <span>Địa chỉ giao hàng</span>
+          <strong>${escapeHtml(order.delivery_address || 'Chưa có địa chỉ')}</strong>
         </div>
         <div>
-          <span>Ghi chu don</span>
-          <strong>${escapeHtml(order.note || 'Khong co ghi chu')}</strong>
+          <span>Ghi chú don</span>
+          <strong>${escapeHtml(order.note || 'Không có ghi chú')}</strong>
         </div>
       </div>
 
       <div class="tracking-money">
         <div>
-          <span>Tam tinh</span>
+          <span>Tạm tính</span>
           <strong>${formatMoney(order.subtotal)}</strong>
         </div>
         <div>
-          <span>Phi giao hang</span>
+          <span>Phí giao hàng</span>
           <strong>${formatMoney(order.delivery_fee)}</strong>
         </div>
         <div>
-          <span>Giam gia</span>
+          <span>Giảm giá</span>
           <strong>-${formatMoney(order.discount_amount)}</strong>
         </div>
         <div class="tracking-money__total">
-          <span>Tong thanh toan</span>
+          <span>Tổng thanh toán</span>
           <strong>${formatMoney(order.total_amount)}</strong>
         </div>
       </div>
@@ -140,20 +140,20 @@ export const TrackingResult = (order) => {
         order.order_status === 'CANCELLED'
           ? `
             <div class="tracking-cancel">
-              <strong>Ly do huy</strong>
-              <p>${escapeHtml(order.cancel_reason || 'Chua co ly do huy.')}</p>
+              <strong>Lý do hủy</strong>
+              <p>${escapeHtml(order.cancel_reason || 'Chưa có lý do hủy.')}</p>
             </div>
           `
           : ''
       }
 
       <div class="tracking-section">
-        <h3>Trang thai don</h3>
+        <h3>Trạng thái don</h3>
         ${OrderStatusTimeline({ orderStatus: order.order_status, statusHistory: order.status_history || [] })}
       </div>
 
       <div class="tracking-section">
-        <h3>Tong quan mon</h3>
+        <h3>Tổng quan món</h3>
         ${renderItems(order.items || [])}
       </div>
     </section>

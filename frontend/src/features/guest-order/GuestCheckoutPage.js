@@ -1,5 +1,7 @@
 import { CartContext } from '../../contexts/CartContext.js';
 import { orderService } from '../../services/orderService.js';
+import { authService } from '../../services/authService.js';
+import { accountService } from '../../services/accountService.js';
 
 const LAST_GUEST_ORDER_KEY = 'fast-food-last-guest-order';
 
@@ -45,17 +47,17 @@ const validateForm = (form) => {
   const phone = String(formData.get('guest_phone') || '').trim().replace(/[\s.-]/g, '');
 
   if (!String(formData.get('guest_name') || '').trim()) {
-    errors.guest_name = 'Vui long nhap ho ten';
+    errors.guest_name = 'Vui lòng nhập họ tên';
   }
 
   if (!phone) {
-    errors.guest_phone = 'Vui long nhap so dien thoai';
+    errors.guest_phone = 'Vui lòng nhập số điện thoại';
   } else if (!/^(0\d{9}|\+84\d{9})$/.test(phone)) {
-    errors.guest_phone = 'So dien thoai khong dung dinh dang';
+    errors.guest_phone = 'Số điện thoại không đúng định dạng';
   }
 
   if (!String(formData.get('guest_address') || '').trim()) {
-    errors.guest_address = 'Vui long nhap dia chi giao hang';
+    errors.guest_address = 'Vui lòng nhập địa chỉ giao hàng';
   }
 
   return errors;
@@ -82,11 +84,11 @@ const renderOrderSummary = (deliveryFee = 0) => {
   const totalAmount = Math.max(0, subtotal - discountAmount + deliveryFee);
 
   return `
-    <aside class="checkout-summary" aria-label="Tom tat don hang">
-      <h2>Tom tat don hang</h2>
+    <aside class="checkout-summary" aria-label="Tóm tắt đơn hàng">
+      <h2>Tóm tắt đơn hàng</h2>
       <ul>${renderSummaryItems()}</ul>
       <div class="checkout-summary__row">
-        <span>Tam tinh</span>
+        <span>Tạm tính</span>
         <strong>${formatMoney(subtotal)}</strong>
       </div>
       ${
@@ -100,24 +102,24 @@ const renderOrderSummary = (deliveryFee = 0) => {
           : ''
       }
       <div class="checkout-summary__row">
-        <span>Phi giao hang</span>
-        <strong>${deliveryFee > 0 ? formatMoney(deliveryFee) : 'Nhap dia chi'}</strong>
+        <span>Phí giao hàng</span>
+        <strong>${deliveryFee > 0 ? formatMoney(deliveryFee) : 'Nhập địa chỉ'}</strong>
       </div>
       <div class="checkout-summary__total">
-        <span>Tong thanh toan</span>
+        <span>Tổng thanh toán</span>
         <strong>${formatMoney(totalAmount)}</strong>
       </div>
     </aside>
   `;
 };
 
-const renderCheckoutForm = ({ fieldErrors = {}, submitError = '', isSubmitting = false, deliveryFee = 0, values = {} } = {}) => {
+const renderCheckoutForm = ({ fieldErrors = {}, submitError = '', isSubmitting = false, deliveryFee = 0, values = {}, isMember = false } = {}) => {
   if (!CartContext.cartItems.length) {
     return `
       <section class="checkout-empty">
-        <h1>Gio hang khong hop le</h1>
-        <p>Vui long quay lai gio hang de them mon hoac cap nhat so luong truoc khi thanh toan.</p>
-        <a class="button button-primary" href="#/cart">Quay lai gio hang</a>
+        <h1>Giỏ hàng không hợp lệ</h1>
+        <p>Vui lòng quay lại giỏ hàng để thêm món hoặc cập nhật số lượng trước khi thanh toán.</p>
+        <a class="button button-primary" href="#/cart">Quay lại giỏ hàng</a>
       </section>
     `;
   }
@@ -125,36 +127,36 @@ const renderCheckoutForm = ({ fieldErrors = {}, submitError = '', isSubmitting =
   return `
     <div class="checkout-header">
       <div>
-        <h1>Thanh toan khach vang lai</h1>
-        <p>Nhap thong tin nhan hang de tao ma don vang lai va tiep tuc buoc thanh toan.</p>
+        <h1>${isMember ? 'Thanh toán thành viên' : 'Thanh toán khách vãng lai'}</h1>
+        <p>${isMember ? 'Thông tin tài khoản được điền sẵn, đơn hàng sẽ được lưu vào lịch sử và tích điểm.' : 'Nhập thông tin nhận hàng để tạo mã đơn vãng lai và tiếp tục bước thanh toán.'}</p>
       </div>
-      <a class="button button-secondary" href="#/login">Dang nhap / Dang ky</a>
+      ${isMember ? '<a class="button button-secondary" href="#/account">Tài khoản</a>' : '<a class="button button-secondary" href="#/login">Đăng nhập / Đăng ký</a>'}
     </div>
 
     <div class="checkout-layout">
       <form class="checkout-form" data-guest-checkout-form novalidate>
         ${submitError ? `<div class="checkout-error">${escapeHtml(submitError)}</div>` : ''}
         <label class="checkout-field ${fieldErrors.guest_name ? 'has-error' : ''}">
-          <span>Ho ten</span>
+          <span>Họ tên</span>
           <input name="guest_name" type="text" maxlength="100" autocomplete="name" value="${escapeHtml(values.guest_name || '')}" />
           ${renderFieldError(fieldErrors, 'guest_name')}
         </label>
         <label class="checkout-field ${fieldErrors.guest_phone ? 'has-error' : ''}">
-          <span>So dien thoai</span>
+          <span>Số điện thoại</span>
           <input name="guest_phone" type="tel" maxlength="20" autocomplete="tel" placeholder="0900000000" value="${escapeHtml(values.guest_phone || '')}" />
           ${renderFieldError(fieldErrors, 'guest_phone')}
         </label>
         <label class="checkout-field ${fieldErrors.guest_address ? 'has-error' : ''}">
-          <span>Dia chi giao hang</span>
-          <textarea name="guest_address" rows="3" maxlength="255" autocomplete="street-address" placeholder="Vi du: 12 Nguyen Hue, Quan 1, TP HCM">${escapeHtml(values.guest_address || '')}</textarea>
+          <span>Địa chỉ giao hàng</span>
+          <textarea name="guest_address" rows="3" maxlength="255" autocomplete="street-address" placeholder="Ví dụ: 12 Nguyễn Huệ, Quận 1, TP HCM">${escapeHtml(values.guest_address || '')}</textarea>
           ${renderFieldError(fieldErrors, 'guest_address')}
         </label>
         <label class="checkout-field">
-          <span>Ghi chu</span>
+          <span>Ghi chú</span>
           <textarea name="note" rows="2" maxlength="255" placeholder="Vi du: goi truoc khi giao">${escapeHtml(values.note || '')}</textarea>
         </label>
         <fieldset class="checkout-payment">
-          <legend>Phuong thuc thanh toan</legend>
+          <legend>Phương thức thanh toán</legend>
           <label>
             <input type="radio" name="payment_method" value="COD" ${values.payment_method !== 'ONLINE_MOCK' ? 'checked' : ''} />
             <span>COD</span>
@@ -165,7 +167,7 @@ const renderCheckoutForm = ({ fieldErrors = {}, submitError = '', isSubmitting =
           </label>
         </fieldset>
         <button class="button button-primary checkout-submit" type="submit" ${isSubmitting ? 'disabled' : ''}>
-          ${isSubmitting ? 'Dang tao don...' : 'Xac nhan dat mon'}
+          ${isSubmitting ? 'Đang tạo đơn...' : 'Xác nhận đặt món'}
         </button>
       </form>
       <div data-checkout-summary>${renderOrderSummary(deliveryFee)}</div>
@@ -178,7 +180,7 @@ const pageStyles = `
     .guest-checkout-page { padding: 6px 0 24px; }
     .checkout-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 22px; }
     .checkout-header h1 { margin: 0 0 8px; font-size: 34px; }
-    .checkout-header p { margin: 0; max-width: 680px; color: var(--muted); line-height: 1.5; }
+    .checkout-header p { margin: 0; max-width: 1040px; color: var(--muted); line-height: 1.5; }
     .checkout-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: flex-start; }
     .checkout-form, .checkout-summary, .checkout-empty { border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 12px 28px rgba(116, 36, 0, 0.08); }
     .checkout-form { display: grid; gap: 14px; padding: 18px; }
@@ -233,9 +235,10 @@ export const mountGuestCheckoutPage = () => {
   let isSubmitting = false;
   let deliveryFee = 0;
   let formValues = {};
+  let isMember = Boolean(authService.getCurrentSession()?.token);
 
   const render = () => {
-    root.innerHTML = renderCheckoutForm({ fieldErrors, submitError, isSubmitting, deliveryFee, values: formValues });
+    root.innerHTML = renderCheckoutForm({ fieldErrors, submitError, isSubmitting, deliveryFee, values: formValues, isMember });
   };
 
   root.addEventListener('input', (event) => {
@@ -271,7 +274,7 @@ export const mountGuestCheckoutPage = () => {
     }
 
     if (!CartContext.cartItems.length) {
-      submitError = 'Gio hang rong hoac khong hop le. Vui long quay lai gio hang.';
+      submitError = 'Giỏ hàng rỗng hoặc không hợp lệ. Vui lòng quay lại giỏ hàng.';
       render();
       return;
     }
@@ -305,16 +308,49 @@ export const mountGuestCheckoutPage = () => {
       isSubmitting = true;
       render();
 
-      const order = await orderService.createGuestOrder(payload);
+      const order = isMember
+        ? await accountService.createMemberOrder({
+            ...payload,
+            delivery_address: payload.guest_address
+          })
+        : await orderService.createGuestOrder(payload);
       window.sessionStorage.setItem(LAST_GUEST_ORDER_KEY, JSON.stringify(order));
       CartContext.clearCart();
-      window.location.hash = '#/guest-order/result';
+      window.location.hash = isMember ? '#/account' : '#/guest-order/result';
     } catch (error) {
       fieldErrors = error?.errors && typeof error.errors === 'object' ? error.errors : {};
-      submitError = error?.message || 'Khong the tao don hang. Vui long thu lai.';
+      if (fieldErrors.delivery_address && !fieldErrors.guest_address) {
+        fieldErrors.guest_address = fieldErrors.delivery_address;
+      }
+      submitError = error?.message || 'Không thể tạo đơn hàng. Vui lòng thử lại.';
     } finally {
       isSubmitting = false;
       render();
     }
   });
+
+  const prefillMember = async () => {
+    if (!isMember) return;
+
+    try {
+      const [profile, addresses] = await Promise.all([accountService.getProfile(), accountService.getAddresses()]);
+      const defaultAddress = (addresses || []).find((address) => address.is_default) || addresses?.[0];
+      formValues = {
+        ...formValues,
+        guest_name: profile.full_name || '',
+        guest_phone: profile.phone || '',
+        guest_address: defaultAddress
+          ? [defaultAddress.address_detail, defaultAddress.ward, defaultAddress.district, defaultAddress.city].filter(Boolean).join(', ')
+          : '',
+        payment_method: 'COD'
+      };
+      deliveryFee = estimateDeliveryFee(formValues.guest_address);
+      render();
+    } catch (error) {
+      isMember = false;
+      render();
+    }
+  };
+
+  prefillMember();
 };

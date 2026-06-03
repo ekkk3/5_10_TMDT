@@ -12,7 +12,7 @@ const renderFieldError = (errors = {}, fieldName) =>
 export const TrackingForm = ({ values = {}, fieldErrors = {}, isLoading = false } = {}) => `
   <form class="tracking-form" data-tracking-form novalidate>
     <label class="tracking-field ${fieldErrors.orderCode ? 'has-error' : ''}">
-      <span>Ma don</span>
+      <span>Mã đơn</span>
       <input
         name="orderCode"
         type="text"
@@ -24,7 +24,7 @@ export const TrackingForm = ({ values = {}, fieldErrors = {}, isLoading = false 
       ${renderFieldError(fieldErrors, 'orderCode')}
     </label>
     <label class="tracking-field ${fieldErrors.phone ? 'has-error' : ''}">
-      <span>So dien thoai</span>
+      <span>Số điện thoại</span>
       <input
         name="phone"
         type="tel"
@@ -36,7 +36,7 @@ export const TrackingForm = ({ values = {}, fieldErrors = {}, isLoading = false 
       ${renderFieldError(fieldErrors, 'phone')}
     </label>
     <button class="button button-primary tracking-form__submit" type="submit" ${isLoading ? 'disabled' : ''}>
-      ${isLoading ? 'Dang tra cuu...' : 'Tra cuu'}
+      ${isLoading ? 'Đang tra cứu...' : 'Tra cứu'}
     </button>
   </form>
 `;

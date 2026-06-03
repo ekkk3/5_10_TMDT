@@ -73,14 +73,14 @@ const emptyForm = {
 const validateForm = (values = {}, isEditing = false) => {
   const errors = {};
 
-  if (!values.full_name.trim()) errors.full_name = 'Vui long nhap ho ten';
-  if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) errors.email = 'Email khong dung dinh dang';
-  if (values.phone && !/^(0\d{9}|\+84\d{9})$/.test(values.phone.replace(/[\s.-]/g, ''))) errors.phone = 'So dien thoai khong dung dinh dang';
-  if (!values.email && !values.phone) errors.contact = 'Vui long nhap email hoac so dien thoai';
-  if (!INTERNAL_ROLES.includes(values.role_name)) errors.role_name = 'Vai tro khong hop le';
-  if (!STATUSES.includes(values.status)) errors.status = 'Trang thai khong hop le';
-  if (!isEditing && String(values.password || '').length < 8) errors.password = 'Mat khau toi thieu 8 ky tu';
-  if (isEditing && values.password && values.password.length < 8) errors.password = 'Mat khau toi thieu 8 ky tu';
+  if (!values.full_name.trim()) errors.full_name = 'Vui lòng nhập họ tên';
+  if (values.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) errors.email = 'Email không đúng định dạng';
+  if (values.phone && !/^(0\d{9}|\+84\d{9})$/.test(values.phone.replace(/[\s.-]/g, ''))) errors.phone = 'Số điện thoại không đúng định dạng';
+  if (!values.email && !values.phone) errors.contact = 'Vui lòng nhập email hoặc số điện thoại';
+  if (!INTERNAL_ROLES.includes(values.role_name)) errors.role_name = 'Vai trò không hợp lệ';
+  if (!STATUSES.includes(values.status)) errors.status = 'Trạng thái không hợp lệ';
+  if (!isEditing && String(values.password || '').length < 8) errors.password = 'Mật khẩu tối thiểu 8 ký tự';
+  if (isEditing && values.password && values.password.length < 8) errors.password = 'Mật khẩu tối thiểu 8 ký tự';
 
   return errors;
 };
@@ -88,20 +88,20 @@ const validateForm = (values = {}, isEditing = false) => {
 const renderFilters = (filters = {}) => `
   <form class="admin-users-filters" data-admin-user-filters>
     <label class="admin-users-field">
-      Tim tai khoan
-      <input name="keyword" value="${escapeHtml(filters.keyword || '')}" placeholder="Ten, email, SĐT..." />
+      Tìm tài khoản
+      <input name="keyword" value="${escapeHtml(filters.keyword || '')}" placeholder="Tên, email, SĐT..." />
     </label>
     <label class="admin-users-field">
       Vai tro
       <select name="role">
-        <option value="">Tat ca</option>
+        <option value="">Tất cả</option>
         ${renderOptions(INTERNAL_ROLES, filters.role)}
       </select>
     </label>
     <label class="admin-users-field">
-      Trang thai
+      Trạng thái
       <select name="status">
-        <option value="">Tat ca</option>
+        <option value="">Tất cả</option>
         ${renderOptions(STATUSES, filters.status)}
       </select>
     </label>
@@ -116,7 +116,7 @@ const renderForm = ({ values = emptyForm, fieldErrors = {}, isSubmitting = false
     <form class="admin-users-form" data-admin-user-form>
       ${fieldErrors.contact ? `<div class="admin-users-message error">${escapeHtml(fieldErrors.contact)}</div>` : ''}
       <label class="admin-users-field ${fieldErrors.full_name ? 'has-error' : ''}">
-        Ho ten
+        Họ tên
         <input name="full_name" maxlength="100" value="${escapeHtml(values.full_name || '')}" />
         ${renderFieldError(fieldErrors, 'full_name')}
       </label>
@@ -126,7 +126,7 @@ const renderForm = ({ values = emptyForm, fieldErrors = {}, isSubmitting = false
         ${renderFieldError(fieldErrors, 'email')}
       </label>
       <label class="admin-users-field ${fieldErrors.phone ? 'has-error' : ''}">
-        So dien thoai
+        Số điện thoại
         <input name="phone" type="tel" value="${escapeHtml(values.phone || '')}" />
         ${renderFieldError(fieldErrors, 'phone')}
       </label>
@@ -136,18 +136,18 @@ const renderForm = ({ values = emptyForm, fieldErrors = {}, isSubmitting = false
         ${renderFieldError(fieldErrors, 'role_name')}
       </label>
       <label class="admin-users-field ${fieldErrors.status ? 'has-error' : ''}">
-        Trang thai
+        Trạng thái
         <select name="status">${renderOptions(STATUSES, values.status)}</select>
         ${renderFieldError(fieldErrors, 'status')}
       </label>
       <label class="admin-users-field ${fieldErrors.password ? 'has-error' : ''}">
-        Mat khau ${isEditing ? 'moi' : ''}
-        <input name="password" type="password" autocomplete="new-password" placeholder="${isEditing ? 'De trong neu khong doi' : 'Toi thieu 8 ky tu'}" />
+        Mật khẩu ${isEditing ? 'moi' : ''}
+        <input name="password" type="password" autocomplete="new-password" placeholder="${isEditing ? 'Để trống nếu không đổi' : 'Tối thiểu 8 ký tự'}" />
         ${renderFieldError(fieldErrors, 'password')}
       </label>
       <div class="admin-users-form-actions">
-        <button class="button button-primary" type="submit" ${isSubmitting ? 'disabled' : ''}>${isSubmitting ? 'Dang luu...' : isEditing ? 'Cap nhat' : 'Tao nhan vien'}</button>
-        ${isEditing ? '<button class="button button-secondary" type="button" data-reset-user-form>Huy sua</button>' : ''}
+        <button class="button button-primary" type="submit" ${isSubmitting ? 'disabled' : ''}>${isSubmitting ? 'Đang lưu...' : isEditing ? 'Cập nhật' : 'Tạo nhân viên'}</button>
+        ${isEditing ? '<button class="button button-secondary" type="button" data-reset-user-form>Hủy sua</button>' : ''}
       </div>
     </form>
   `;
@@ -155,7 +155,7 @@ const renderForm = ({ values = emptyForm, fieldErrors = {}, isSubmitting = false
 
 const renderRows = (users = []) => {
   if (!users.length) {
-    return '<tr><td colspan="6"><div class="admin-users-message">Chua co tai khoan phu hop.</div></td></tr>';
+    return '<tr><td colspan="6"><div class="admin-users-message">Chưa có tài khoản phù hợp.</div></td></tr>';
   }
 
   return users
@@ -175,11 +175,11 @@ const renderRows = (users = []) => {
           <td>${escapeHtml(user.created_at ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(user.created_at)) : '-')}</td>
           <td>
             <div class="admin-users-actions">
-              <button class="admin-users-action edit" type="button" data-edit-user="${user.user_id}">Sua</button>
+              <button class="admin-users-action edit" type="button" data-edit-user="${user.user_id}">Sửa</button>
               ${
                 user.status === 'LOCKED'
-                  ? `<button class="admin-users-action unlock" type="button" data-unlock-user="${user.user_id}">Mo khoa</button>`
-                  : `<button class="admin-users-action lock" type="button" data-lock-user="${user.user_id}">Khoa</button>`
+                  ? `<button class="admin-users-action unlock" type="button" data-unlock-user="${user.user_id}">Mở khóa</button>`
+                  : `<button class="admin-users-action lock" type="button" data-lock-user="${user.user_id}">Khóa</button>`
               }
             </div>
           </td>
@@ -194,12 +194,12 @@ const renderTable = (users = []) => `
     <table class="admin-users-table">
       <thead>
         <tr>
-          <th>Tai khoan</th>
+          <th>Tài khoản</th>
           <th>Lien he</th>
           <th>Vai tro</th>
-          <th>Trang thai</th>
-          <th>Ngay tao</th>
-          <th>Thao tac</th>
+          <th>Trạng thái</th>
+          <th>Ngày tạo</th>
+          <th>Thao tác</th>
         </tr>
       </thead>
       <tbody>${renderRows(users)}</tbody>
@@ -210,10 +210,10 @@ const renderTable = (users = []) => `
 const renderPageBody = ({ filters = {}, users = [], formValues = emptyForm, fieldErrors = {}, isLoading = false, isSubmitting = false, error = '', success = '' } = {}) => `
   <div class="admin-users-header">
     <div>
-      <h1>Quan ly tai khoan</h1>
-      <p>Tao, cap nhat, khoa tai khoan nhan vien noi bo va gan role phu hop voi quyen van hanh.</p>
+      <h1>Quản lý tài khoản</h1>
+      <p>Tạo, cập nhật, khóa tài khoản nhân viên nội bộ và gán role phù hợp với quyền vận hành.</p>
     </div>
-    <button class="button button-secondary" type="button" data-refresh-users>${isLoading ? 'Dang tai...' : 'Lam moi'}</button>
+    <button class="button button-secondary" type="button" data-refresh-users>${isLoading ? 'Đang tải...' : 'Làm mới'}</button>
   </div>
   ${renderFilters(filters)}
   ${error ? `<div class="admin-users-message error" role="alert">${escapeHtml(error)}</div>` : ''}
@@ -255,7 +255,7 @@ export const mountAdminUserListPage = () => {
       const data = await adminUserService.getUsers(filters);
       users = data.users || [];
     } catch (requestError) {
-      error = requestError?.message || 'Khong the tai danh sach tai khoan.';
+      error = requestError?.message || 'Không thể tải danh sách tài khoản.';
     } finally {
       isLoading = false;
       render();
@@ -322,10 +322,10 @@ export const mountAdminUserListPage = () => {
 
       if (isEditing) {
         await adminUserService.updateUser(values.user_id, payload);
-        success = 'Da cap nhat tai khoan nhan vien.';
+        success = 'Đã cập nhật tài khoản nhân viên.';
       } else {
         await adminUserService.createUser(payload);
-        success = 'Da tao tai khoan nhan vien.';
+        success = 'Đã tạo tài khoản nhân viên.';
       }
 
       formValues = { ...emptyForm };
@@ -333,7 +333,7 @@ export const mountAdminUserListPage = () => {
       await loadUsers();
     } catch (requestError) {
       fieldErrors = requestError?.errors && typeof requestError.errors === 'object' ? requestError.errors : {};
-      error = requestError?.message || 'Khong the luu tai khoan.';
+      error = requestError?.message || 'Không thể lưu tài khoản.';
     } finally {
       isSubmitting = false;
       render();
@@ -371,14 +371,14 @@ export const mountAdminUserListPage = () => {
       try {
         if (lockButton) {
           await adminUserService.lockUser(userId);
-          success = 'Da khoa tai khoan.';
+          success = 'Đã khóa tài khoản.';
         } else {
           await adminUserService.unlockUser(userId);
-          success = 'Da mo khoa tai khoan.';
+          success = 'Đã mở khóa tài khoản.';
         }
         await loadUsers();
       } catch (requestError) {
-        error = requestError?.message || 'Khong the cap nhat trang thai tai khoan.';
+        error = requestError?.message || 'Không thể cập nhật trạng thái tài khoản.';
         render();
       }
       return;

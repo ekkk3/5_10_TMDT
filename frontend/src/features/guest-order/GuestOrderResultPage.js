@@ -56,11 +56,11 @@ export const GuestOrderResultPage = () => {
       ${pageStyles}
       <section class="guest-result">
         <div class="guest-result__panel">
-          <h1>Chua co thong tin don hang</h1>
-          <p>Khong tim thay don vang lai vua tao trong phien hien tai.</p>
+          <h1>Chưa có thông tin đơn hàng</h1>
+          <p>Không tìm thấy đơn vãng lai vừa tạo trong phiên hiện tại.</p>
           <div class="guest-result__actions">
-            <a class="button button-primary" href="#/menu">Dat mon</a>
-            <a class="button button-secondary" href="#/orders/search">Tra cuu don</a>
+            <a class="button button-primary" href="#/menu">Đặt món</a>
+            <a class="button button-secondary" href="#/orders/search">Tra cứu đơn</a>
           </div>
         </div>
       </section>
@@ -72,37 +72,37 @@ export const GuestOrderResultPage = () => {
     <section class="guest-result">
       <div class="guest-result__layout">
         <div class="guest-result__panel">
-          <h1>Dat mon thanh cong</h1>
-          <p>Don hang da duoc tao. Hay luu ma don va so dien thoai de theo doi trang thai giao hang.</p>
+          <h1>Đặt món thành công</h1>
+          <p>Đơn hàng đã được tạo. Hãy lưu mã đơn và số điện thoại để theo dõi trạng thái giao hàng.</p>
           <div class="guest-result__code">
-            <span>Ma don vang lai</span>
+            <span>Mã đơn vãng lai</span>
             <strong>${escapeHtml(order.order_code)}</strong>
           </div>
           <div class="guest-result__meta">
             <div>
-              <span>So dien thoai</span>
+              <span>Số điện thoại</span>
               <strong>${escapeHtml(order.guest_phone)}</strong>
             </div>
             <div>
-              <span>Trang thai</span>
+              <span>Trạng thái</span>
               <strong>${escapeHtml(order.order_status)}</strong>
             </div>
             <div>
-              <span>Tong thanh toan</span>
+              <span>Tổng thanh toán</span>
               <strong>${formatMoney(order.total_amount)}</strong>
             </div>
           </div>
-          <p>Tra cuu don bang ma don <strong>${escapeHtml(order.order_code)}</strong> va so dien thoai vua dat.</p>
+          <p>Tra cứu đơn bằng mã đơn <strong>${escapeHtml(order.order_code)}</strong> và số điện thoại vừa đặt.</p>
           <div class="guest-result__actions">
-            <a class="button button-primary" href="#/orders/search">Theo doi don</a>
-            <a class="button button-secondary" href="#/menu">Tiep tuc dat mon</a>
+            <a class="button button-primary" href="#/orders/search">Theo dõi đơn</a>
+            <a class="button button-secondary" href="#/menu">Tiếp tục đặt món</a>
           </div>
         </div>
-        <aside class="guest-result__payment" aria-label="Thanh toan">
-          <h2>Thanh toan</h2>
+        <aside class="guest-result__payment" aria-label="Thanh toán">
+          <h2>Thanh toán</h2>
           <label class="guest-result__method">
             <input type="radio" checked disabled />
-            <span>Phuong thuc da chon trong buoc dat hang</span>
+            <span>Phương thức đã chọn trong bước đặt hàng</span>
           </label>
           <div class="guest-result__meta">
             <div>
@@ -114,7 +114,7 @@ export const GuestOrderResultPage = () => {
               <strong>${formatMoney(order.total_amount)}</strong>
             </div>
           </div>
-          <a class="button button-secondary" href="#/checkout">Thu lai thanh toan</a>
+          <a class="button button-secondary" href="#/checkout">Thu lại thanh toan</a>
         </aside>
       </div>
     </section>

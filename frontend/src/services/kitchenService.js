@@ -21,7 +21,7 @@ export const kitchenService = {
     const endpoint = endpointByStatus[status];
 
     if (!endpoint) {
-      throw new Error('Trang thai KDS khong hop le');
+      throw new Error('Trạng thái KDS không hợp lệ');
     }
 
     const response = await apiService.patch(`/kitchen/orders/${encodeURIComponent(orderId)}/${endpoint}`, {}, adminAuthService.getAuthorizationOptions());

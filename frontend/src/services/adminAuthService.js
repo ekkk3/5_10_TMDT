@@ -97,7 +97,7 @@ export const adminAuthService = {
       saveSession({ ...getCurrentSession(), ...response.data });
       return response.data;
     } catch (error) {
-      if (error?.statusCode === 401 || error?.message?.includes('Phien dang nhap quan tri')) {
+      if (error?.statusCode === 401 || error?.message?.includes('Phiên đăng nhập quản trị')) {
         clearSession();
       }
 
