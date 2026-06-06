@@ -1,0 +1,64 @@
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from "@expo-google-fonts/inter";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import React, { useEffect } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
+import { CartProvider } from "@/context/CartContext";
+import { AuthProvider } from "@/context/AuthContext";
+
+SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
+
+function RootLayoutNav() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="food/[id]" options={{ presentation: "modal", headerShown: false }} />
+      <Stack.Screen name="checkout" options={{ headerShown: false }} />
+      <Stack.Screen name="order-result" options={{ headerShown: false, gestureEnabled: false }} />
+      <Stack.Screen name="track" options={{ headerShown: false }} />
+      <Stack.Screen name="support" options={{ headerShown: false }} />
+    </Stack>
+  );
+}
+
+export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
+  if (!fontsLoaded && !fontError) return null;
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <CartProvider>
+            <AuthProvider>
+              <RootLayoutNav />
+            </AuthProvider>
+          </CartProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
+}
