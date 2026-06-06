@@ -97,6 +97,10 @@ SOURCE database/seeders/001_seed_sample_data.sql;
 cd backend
 npm install
 copy .env.example .env
+
+cd mobile
+npm install
+
 ```
 
 Sửa `backend/.env` nếu thông tin MySQL trên máy khác mặc định:
