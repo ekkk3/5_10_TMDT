@@ -26,7 +26,7 @@ const formatDateTime = (value) => {
   }).format(new Date(value));
 };
 
-const formatReportPeriod = (value, groupBy = 'day') => {
+const formatReportPeriod = (value, groupBy = 'day', periodEnd = '') => {
   if (!value) return '-';
 
   const raw = String(value).trim();
@@ -43,11 +43,26 @@ const formatReportPeriod = (value, groupBy = 'day') => {
 
   if (Number.isNaN(parsedDate.getTime())) return raw;
 
-  const formattedDate = new Intl.DateTimeFormat('vi-VN', {
+  const dateFormatter = new Intl.DateTimeFormat('vi-VN', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
-  }).format(parsedDate);
+  });
+
+  const formattedDate = dateFormatter.format(parsedDate);
+
+  if (groupBy === 'week') {
+    const endRaw = String(periodEnd || '').trim();
+    const endMatch = endRaw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const parsedEndDate = endMatch
+      ? new Date(Number(endMatch[1]), Number(endMatch[2]) - 1, Number(endMatch[3]))
+      : new Date(endRaw);
+    const formattedEndDate = Number.isNaN(parsedEndDate.getTime()) ? '' : dateFormatter.format(parsedEndDate);
+
+    return formattedEndDate
+      ? `Tu\u1ea7n t\u1eeb ${formattedDate} \u0111\u1ebfn ${formattedEndDate}`
+      : `Tu\u1ea7n t\u1eeb ${formattedDate}`;
+  }
 
   return groupBy === 'week' ? `Tuần từ ${formattedDate}` : formattedDate;
 };
@@ -563,7 +578,7 @@ const renderTimelineTable = (timeline = [], groupBy = 'day') => {
     .map(
       (row) => `
         <tr>
-          <td><strong>${escapeHtml(formatReportPeriod(row.period, groupBy))}</strong></td>
+          <td><strong>${escapeHtml(formatReportPeriod(row.period, groupBy, row.period_end))}</strong></td>
           <td>${Number(row.order_count || 0).toLocaleString('vi-VN')}</td>
           <td class="money">${formatMoney(row.gross_revenue)}</td>
           <td class="money">${formatMoney(row.discount)}</td>
@@ -831,7 +846,7 @@ export const mountAdminReportPage = () => {
       timeline.forEach((row) => {
         lines.push(
           [
-            q(formatReportPeriod(row.period, filters.group_by)),
+            q(formatReportPeriod(row.period, filters.group_by, row.period_end)),
             q(row.order_count || 0),
             q(formatMoneyRaw(row.gross_revenue)),
             q(formatMoneyRaw(row.discount)),

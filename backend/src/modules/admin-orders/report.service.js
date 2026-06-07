@@ -140,13 +140,16 @@ const getRevenueReport = async (filters = {}) => {
   };
 
   let periodExpr;
+  let periodEndExpr = 'NULL';
   let groupByExpr;
   let orderByExpr;
 
   if (group_by === 'week') {
-    periodExpr = 'MIN(DATE(o.created_at))';
-    groupByExpr = 'YEARWEEK(o.created_at, 1)';
-    orderByExpr = 'YEARWEEK(o.created_at, 1)';
+    const weekStartExpr = 'DATE_SUB(DATE(o.created_at), INTERVAL WEEKDAY(o.created_at) DAY)';
+    periodExpr = `MIN(${weekStartExpr})`;
+    periodEndExpr = `DATE_ADD(MIN(${weekStartExpr}), INTERVAL 6 DAY)`;
+    groupByExpr = weekStartExpr;
+    orderByExpr = weekStartExpr;
   } else if (group_by === 'month') {
     periodExpr = "DATE_FORMAT(o.created_at, '%Y-%m')";
     groupByExpr = "DATE_FORMAT(o.created_at, '%Y-%m')";
@@ -161,6 +164,7 @@ const getRevenueReport = async (filters = {}) => {
     `
       SELECT
         ${periodExpr} AS period,
+        ${periodEndExpr} AS period_end,
         COUNT(*) AS order_count,
         COALESCE(SUM(o.subtotal + o.delivery_fee), 0) AS gross_revenue,
         COALESCE(SUM(o.discount_amount), 0) AS discount,
@@ -179,6 +183,7 @@ const getRevenueReport = async (filters = {}) => {
     const netRevenue = grossRevenue - discount;
     return {
       period: group_by === 'month' ? String(row.period) : formatSqlDate(row.period),
+      period_end: group_by === 'week' ? formatSqlDate(row.period_end) : null,
       order_count: Number(row.order_count),
       gross_revenue: grossRevenue,
       discount,
